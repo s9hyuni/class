@@ -487,6 +487,34 @@ const countdownText = $("#countdown-text");
 // poll은 시작할 때의 번호를 기억했다가, 응답이 왔을 때 번호가 바뀌었으면 그 응답을 버립니다.
 let selectedAt = "";
 let viewGeneration = 0;
+// ── 조회 기록 ──
+// poll() 한 번마다 한 건을 남기고, 최근 200건만 이 탭의 sessionStorage에 둡니다.
+// 페이지를 떠나는 중(leaving)에 끊긴 요청은 조회 실패가 아니라서 남기지 않습니다.
+let queryLog = [];
+let leaving = false;
+const QUERY_LOG_KEY = "tumble-query-log";
+// 읽은 값이 배열이면 모양이 맞는 항목만 남깁니다. 읽을 수 없거나 배열이 아니면 빈 배열에서 시작합니다.
+try {
+  const stored = JSON.parse(sessionStorage.getItem(QUERY_LOG_KEY) || "[]");
+  if (Array.isArray(stored)) queryLog = stored.filter(r => r && time(r.requestedAt) && typeof r.ok === "boolean" && integer(r.durationMs) &&
+    r.available && typeof r.available.factory === "boolean" && typeof r.available.warehouse === "boolean").slice(-200);
+} catch { /* sessionStorage를 쓸 수 없거나 JSON이 아니면 빈 배열로 시작합니다. */ }
+function saveQueryLog(entry) {
+  queryLog.push(entry);
+  queryLog = queryLog.slice(-200);
+  // 저장이 실패하면 메모리의 배열로만 이어 갑니다(다음 저장 때 지금 배열 전체로 다시 씁니다).
+  try { sessionStorage.setItem(QUERY_LOG_KEY, JSON.stringify(queryLog)); } catch { /* 메모리 기록은 유지 */ }
+}
+// 실패 문구의 첫 문장입니다. ". "까지 자르고 60자가 넘으면 60자 뒤에 "…"를 붙입니다.
+function firstSentence(text) {
+  const value = String(text), end = value.indexOf(". ");
+  const head = end === -1 ? value : value.slice(0, end + 1);
+  return head.length > 60 ? head.slice(0, 60) + "…" : head;
+}
+const sitesAvailable = (data) => ({
+  factory: integer(data.sites.factory.completed) && integer(data.sites.factory.target),
+  warehouse: integer(data.sites.warehouse.completed) && integer(data.sites.warehouse.target)
+});
 // 지난 render의 주소(# 부분)입니다. 같으면 "같은 화면", 다르면 "주소가 바뀐 뒤 처음 그림"으로 봅니다.
 let renderedHash = null;
 
@@ -521,6 +549,15 @@ function render(data = lastData) {
   // 사건과 조회 실패를 합친 목록 하나로 알림 버튼·목록과 먼저 확인할 일을 함께 채웁니다.
   const issues = currentIssues(data, errorText);
   renderNotifications(issues);
+  // 데이터 조회 기록 두 카드에는 마지막 기록을 씁니다.
+  const latest = queryLog[queryLog.length - 1];
+  for (const site of ["factory", "warehouse"]) {
+    $("#" + site + "-query").textContent = latest ? dateText(latest.requestedAt) + " · " + (latest.ok ? "조회 성공" : "조회 실패") : "조회 기록 없음";
+    const meta = $("#" + site + "-query-meta");
+    meta.hidden = !latest;
+    meta.textContent = latest ? "응답시간: " + latest.durationMs + "ms · " + (!latest.ok ? "자료를 받지 못했습니다." : latest.available[site] ? "현장 값 제공" : "현장 값 누락") : "";
+  }
+
   if (!data && !errorText) {
     // 첫 응답 전(조회 중이고 오류도 없음): 화면이 처음 열릴 때와 같은 "조회 중" 글자를 다시 씁니다.
     $("#hero").className = "hero neutral";
@@ -672,10 +709,14 @@ async function poll() {
   if (polling) return;
   clearSchedule();
   polling = true;
-  const generation = viewGeneration, at = selectedAt;
+  const generation = viewGeneration, at = selectedAt, started = Date.now();
+  // 버린 응답(번호가 바뀜)도 요청을 보낸 것이므로 한 건으로 남깁니다.
+  const entry = { requestedAt: new Date(started).toISOString(), at, ok: false, durationMs: 0, available: { factory: false, warehouse: false }, error: "" };
   updateRefreshButton();
   try {
     const incoming = await readSnapshot(at);
+    entry.ok = true;
+    entry.available = sitesAvailable(incoming);
     // 기준 시각이나 화면 주소가 바뀐 뒤 온 응답은 화면에 쓰지 않고 버립니다.
     if (generation !== viewGeneration) return;
     lastData = incoming;
@@ -684,8 +725,14 @@ async function poll() {
     // 기록은 따로 받아 snapshot 화면 갱신을 기다리게 하지 않습니다.
     void loadRecords(incoming.viewTime, generation);
   } catch (error) {
-    if (generation === viewGeneration) errorText = String(error?.message || error);
+    const message = String(error?.message || error);
+    entry.error = firstSentence(message);
+    // 떠나는 중에 실패한 조회는 오류 문구로 쓰지 않습니다.
+    if (generation === viewGeneration && !leaving) errorText = message;
   } finally {
+    entry.durationMs = Math.max(0, Date.now() - started);
+    // 떠나는 중이라도 성공한 조회는 남깁니다.
+    if (entry.ok || !leaving) saveQueryLog(entry);
     polling = false;
     updateRefreshButton();
     render();
@@ -762,6 +809,16 @@ document.addEventListener("visibilitychange", () => {
   if (!polling && nextPollAt && Date.now() >= nextPollAt) { clearSchedule(); poll(); }
   else updateCountdown();
 });
+// Chrome은 새로고침할 때 진행 중인 fetch를 pagehide보다 먼저 실패로 돌려주므로 beforeunload에서 "떠나는 중"을 켭니다.
+// 확인 창이 뜨지 않도록 preventDefault와 returnValue는 쓰지 않습니다. 이동이 취소된 경우를 위해 timeoutMs 뒤에 끕니다.
+const leaveTimeout = typeof config.timeoutMs === "number" ? config.timeoutMs : 5000;
+for (const type of ["beforeunload", "pagehide"]) {
+  window.addEventListener(type, () => {
+    leaving = true;
+    setTimeout(() => { leaving = false; }, leaveTimeout);
+  });
+}
+window.addEventListener("pageshow", () => { leaving = false; });
 render();
 poll();
 setInterval(updateCountdown, 250);
