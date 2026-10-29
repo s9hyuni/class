@@ -109,3 +109,38 @@ main { padding-top: 24px; padding-bottom: 48px; min-height: 65vh; scroll-margin-
 .production-progress { width: 100%; height: 12px; accent-color: #47594d; }
 .loading-graph { min-height: 190px; display: grid; place-items: center; color: var(--muted); background: var(--surface); border-radius: 8px; }
 .graph-scroll { overflow-x: auto; max-width: 100%; padding-top: 12px; overscroll-behavior-x: contain; }
+
+/* 1-12 화면 폭 규칙 */
+@media (max-width: 1199px) and (min-width: 701px) {
+  .header-inner { flex-wrap: wrap; gap: 12px 24px; }
+  .header-actions { flex: 1 0 100%; justify-content: flex-end; }
+}
+@media (max-width: 850px) and (min-width: 701px) {
+  .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .header-inner, main, footer { padding-inline: 16px; }
+  .header-inner { display: block; padding-block: 12px; }
+  .brand { width: fit-content; min-height: 44px; gap: 8px; }
+  .brand-logo { width: 36px; height: 36px; }
+  .brand strong { font-size: 18px; }
+  .brand-copy { flex-direction: column; align-items: flex-start; gap: 0; }
+  .header-actions { flex-wrap: wrap; justify-content: space-between; margin: 12px 0 0; gap: 8px; }
+  .view-time-control { flex: 1 0 calc(100% - 104px); }
+  .view-time-control select { max-width: 180px; flex: 1; }
+  .refresh-wrap { flex: 1; }
+  .notification-wrap { position: absolute; top: 16px; right: 16px; }
+  .alerts-link { width: 44px; height: 44px; padding: 0; justify-content: center; }
+  .alerts-text { display: none; }
+  main { scroll-margin-top: 200px; }
+  .two-columns, .status-grid { grid-template-columns: 1fr; }
+  .grid { gap: 16px; }
+  .card, .hero { padding: 16px; }
+  .hero h2 { font-size: 22px; }
+  .section { margin-top: 32px; }
+  .section-intro { margin-bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):not([aria-disabled="true"]):active { transform: none; }
+  .refresh-btn, .alerts-link { transition: none; }
+}
