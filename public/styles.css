@@ -87,3 +87,25 @@ button:not(:disabled):not([aria-disabled="true"]):active { transform: scale(.97)
 .skip-link { position: fixed; left: 16px; top: -100px; background: #fff; padding: 12px 20px; z-index: 300; }
 .skip-link:focus { top: 12px; }
 footer { padding-top: 24px; padding-bottom: 32px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+
+/* 1-11 Grid로 카드 배치 */
+.grid { display: grid; gap: 24px; }
+.two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.status-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+main { padding-top: 24px; padding-bottom: 48px; min-height: 65vh; scroll-margin-top: 110px; }
+.page-heading { margin-bottom: 24px; }
+.page-heading p { color: var(--muted); margin-top: 8px; max-width: 70ch; }
+.section { margin-top: 48px; }
+.section > h2 { margin-bottom: 12px; }
+.section-intro { color: var(--muted); margin-bottom: 24px; max-width: 75ch; }
+.status-card { display: flex; flex-direction: column; }
+.status-card .status-line { margin-bottom: 8px; }
+.status-card .status-line h3 { font-size: 18px; }
+.status-card .meta { margin-top: auto; padding-top: 16px; }
+.photo-slot { margin: 24px 0 16px; }
+.photo-slot img, .photo-placeholder { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 8px; background: var(--surface); }
+.photo-placeholder { display: grid; place-items: center; color: var(--muted); border: 1px dashed var(--line); padding: 12px; }
+.photo-slot figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; }
+.production-progress { width: 100%; height: 12px; accent-color: #47594d; }
+.loading-graph { min-height: 190px; display: grid; place-items: center; color: var(--muted); background: var(--surface); border-radius: 8px; }
+.graph-scroll { overflow-x: auto; max-width: 100%; padding-top: 12px; overscroll-behavior-x: contain; }
