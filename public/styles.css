@@ -1,0 +1,23 @@
+/* 1-8 기본 규칙 */
+:root {
+  color-scheme: light;
+  --ink: #222724; --muted: #545b57; --line: #dce1dd; --surface: #f5f6f5;
+  --good: #176642; --good-bg: #eef7f1;
+  --warn: #775407; --warn-bg: #fff8df;
+  --danger: #ad302b; --danger-bg: #fff1ef;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.3; letter-spacing: -.035em; text-wrap: balance; }
+h2 { font-size: 23px; line-height: 1.45; letter-spacing: -.02em; text-wrap: balance; }
+h3 { font-size: 20px; line-height: 1.45; }
+p, td, th, a, button, .eyebrow { font-size: 16px; }
+a { color: inherit; text-underline-offset: 4px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+input { caret-color: var(--good); }
+a, button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+::selection { background: #dbe9df; color: var(--ink); }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--good); outline-offset: 4px; }
