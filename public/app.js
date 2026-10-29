@@ -239,10 +239,14 @@ function renderRecords(data, id, sameScreen) {
 }
 
 // ── 알림 목록과 먼저 확인할 일 ──
-// PREDICTION-JOB은 빼고, 같은 id는 한 번만 넣고, level이 error인 항목을 앞에 둡니다.
-function currentIssues(data) {
+// 서버가 알린 사건과 화면이 겪은 조회 실패(failure)를 한 목록으로 만듭니다.
+// PREDICTION-JOB은 빼고, 같은 id는 한 번만 넣고, 순서는 API-QUERY, level error, 나머지입니다.
+function currentIssues(data, failure = "") {
   const issues = new Map((data?.incidents || []).filter(item => item.id !== "PREDICTION-JOB").map(item => [item.id, item]));
-  return [...issues.values()].sort((a, b) => (a.level === "error" ? 0 : 1) - (b.level === "error" ? 0 : 1));
+  if (failure) issues.set("API-QUERY", { id: "API-QUERY", scope: "service", level: "error",
+    title: "최신 자료를 가져오지 못했습니다.", owner: "서비스 운영 담당자", action: "조회 연결과 서버 상태를 확인해 주세요." });
+  const rank = (item) => item.id === "API-QUERY" ? 0 : item.level === "error" ? 1 : 2;
+  return [...issues.values()].sort((a, b) => rank(a) - rank(b));
 }
 function toggleNotifications(force) {
   const panel = $("#notification-dropdown"), button = $("#header-alerts-link");
@@ -250,20 +254,22 @@ function toggleNotifications(force) {
   panel.hidden = !open;
   button.setAttribute("aria-expanded", String(open));
 }
+// 자료가 아직 없으면 "알림 확인 중"(neutral)이고, 자료 없이 실패만 했으면 조회 실패 한 건입니다.
 function renderNotifications(issues) {
+  const waiting = !lastData && !errorText;
   const panel = $("#notification-dropdown");
   panel.replaceChildren(el("h2", "", "알림"));
-  if (!issues.length) panel.append(el("p", "", "확인할 알림이 없습니다."));
+  if (!issues.length) panel.append(el("p", "", waiting ? "자료를 확인하고 있습니다." : "확인할 알림이 없습니다."));
   for (const item of issues) {
     const entry = el("article", "notification-item");
     entry.append(el("h3", "", item.title), el("p", "", "담당자: " + item.owner), el("p", "", "할 일: " + item.action));
     panel.append(entry);
   }
-  const countText = "알림 " + issues.length + "건";
+  const countText = waiting ? "알림 확인 중" : "알림 " + issues.length + "건";
   $("#header-alerts-text").textContent = countText;
   const button = $("#header-alerts-link");
   button.setAttribute("aria-label", countText);
-  button.className = "alerts-link " + (issues.some(item => item.level === "error") ? "danger" : issues.length ? "warning" : "good");
+  button.className = "alerts-link " + (waiting ? "neutral" : issues.some(item => item.level === "error") ? "danger" : issues.length ? "warning" : "good");
 }
 function renderHero(issues) {
   const first = issues[0];
@@ -276,6 +282,7 @@ function renderHero(issues) {
   }
   const where = first.scope === "factory" || first.id === "FACTORY-FEED" ? "생산 기록 보기에서 마지막 기록을 확인하세요. " :
     first.scope === "warehouse" || first.id === "WAREHOUSE-FEED" ? "출고 기록 보기에서 마지막 기록을 확인하세요. " :
+    first.id === "API-QUERY" ? "새로고침 후에도 실패하면 담당자에게 문의하세요. " :
     first.id === "ALERT-DELIVERY" ? "아래 알림 전송 기록에서 마지막 시도와 실패 여부를 확인하세요. " : "";
   $("#hero-title").textContent = first.title;
   $("#hero-owner").textContent = "담당자: " + first.owner;
@@ -505,6 +512,9 @@ function render(data = lastData) {
   const queries = $("#queries-view");
   keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : [])), sameScreen);
   if (route === "records") renderRecords(data, id, sameScreen);
+  // 사건과 조회 실패를 합친 목록 하나로 알림 버튼·목록과 먼저 확인할 일을 함께 채웁니다.
+  const issues = currentIssues(data, errorText);
+  renderNotifications(issues);
   if (!data && !errorText) {
     // 첫 응답 전(조회 중이고 오류도 없음): 화면이 처음 열릴 때와 같은 "조회 중" 글자를 다시 씁니다.
     $("#hero").className = "hero neutral";
@@ -522,8 +532,6 @@ function render(data = lastData) {
   }
   // 첫 조회부터 실패해 자료가 없으면 빈 자료로 그립니다. "조회 중"은 남지 않고 값 없음 표시가 됩니다.
   if (!data) data = normalizeSnapshot({ serverTime: new Date().toISOString(), sites: {}, services: {}, incidents: [] });
-  const issues = currentIssues(data);
-  renderNotifications(issues);
   renderHero(issues);
 
   const now = Date.parse(data.viewTime);
