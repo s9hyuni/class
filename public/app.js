@@ -40,11 +40,11 @@ const el = (tag, className = "", value) => {
   return node;
 };
 const statusNames = { normal: "정상", warning: "확인 필요", error: "오류", sent: "전송 성공", failed: "실패", unknown: "확인 불가", waiting: "대기" };
-// 배지 하나를 상태에 맞게 바꿉니다. 객체에 없는 값은 "확인 필요"로 씁니다.
+// 배지 하나를 상태에 맞게 바꿉니다. 객체에 없는 값은 "확인 필요", "loading"은 응답 전의 "조회 중"입니다.
 function setBadge(node, value) {
-  const tone = ["normal", "sent"].includes(value) ? "good" : ["error", "failed"].includes(value) ? "danger" : "warning";
+  const tone = value === "loading" ? "neutral" : ["normal", "sent"].includes(value) ? "good" : ["error", "failed"].includes(value) ? "danger" : "warning";
   node.className = "badge " + tone;
-  node.textContent = statusNames[value] || "확인 필요";
+  node.textContent = value === "loading" ? "조회 중" : statusNames[value] || "확인 필요";
 }
 const siteNames = { factory: { noun: "생산", label: "텀블공장" }, warehouse: { noun: "출고", label: "물류창고" } };
 
@@ -81,11 +81,12 @@ function graphSvg(label, points) {
   return svg;
 }
 // 그래프 칸(.graph-scroll) 안의 SVG만 바꿉니다. 바꾸기 전 가로 스크롤 위치를 기억했다가 되돌립니다.
-function renderGraph(box, label, points) {
+// 응답 전(loading)에는 "시간별 기록 조회 중"만 보입니다.
+function renderGraph(box, label, points, loading) {
   const scroller = box.querySelector(".graph-scroll");
-  const hasPoints = Array.isArray(points) && points.length > 0;
-  box.querySelector(".loading-graph").hidden = true;
-  box.querySelector(".graph-empty").hidden = hasPoints;
+  const hasPoints = !loading && Array.isArray(points) && points.length > 0;
+  box.querySelector(".loading-graph").hidden = !loading;
+  box.querySelector(".graph-empty").hidden = loading || hasPoints;
   box.querySelector(".graph-caption").hidden = !hasPoints;
   scroller.hidden = !hasPoints;
   const left = scroller.scrollLeft;
@@ -95,6 +96,7 @@ function renderGraph(box, label, points) {
 
 // ── 기록 처리 상태 카드 안쪽 ──
 function timelineContent(label, site, now) {
+  if (site.loading) return [el("h3", "", label), el("p", "meta", "기록 처리 정보 조회 중")];
   const age = freshness(site.lastEventAt, now);
   const top = el("div", "status-line");
   const badge = el("span");
@@ -115,13 +117,14 @@ function timelineContent(label, site, now) {
 }
 
 // 현장 하나(공장 또는 창고)의 생산·출고 카드, 운영 상태 카드, 기록 처리 상태 카드를 채웁니다.
+// site.loading이면 응답 전이라 index.html의 "조회 중" 글자를 그대로 다시 씁니다.
 function renderSite(id, site, now) {
   const { noun, label } = siteNames[id];
   const quantity = $("#" + id + "-quantity").querySelectorAll("span");
-  quantity[0].textContent = noun + " " + numberText(site.completed);
-  quantity[1].textContent = "· 목표 " + numberText(site.target);
-  $("#" + id + "-progress-text").textContent = "계획 대비 " + progressText(site.completed, site.target);
-  const valid = integer(site.completed) && integer(site.target) && site.target !== 0;
+  quantity[0].textContent = site.loading ? "조회 중" : noun + " " + numberText(site.completed);
+  quantity[1].textContent = site.loading ? "" : "· 목표 " + numberText(site.target);
+  $("#" + id + "-progress-text").textContent = site.loading ? noun + " 실적과 목표를 가져오고 있습니다." : "계획 대비 " + progressText(site.completed, site.target);
+  const valid = !site.loading && integer(site.completed) && integer(site.target) && site.target !== 0;
   const bar = $("#" + id + "-progress");
   bar.hidden = !valid;
   if (valid) {
@@ -129,15 +132,15 @@ function renderSite(id, site, now) {
     bar.setAttribute("aria-label", label + " 목표 달성률 " + progressText(site.completed, site.target));
   }
   $("#" + id + "-exceeded").hidden = !(valid && site.completed > site.target);
-  renderGraph($("#" + id + "-graph"), label, site.history);
+  renderGraph($("#" + id + "-graph"), label, site.history, site.loading);
 
   const age = freshness(site.lastEventAt, now);
-  const status = age === "missing" ? "waiting" : age === "stale" ? "warning" : site.status;
+  const status = site.loading ? "loading" : age === "missing" ? "waiting" : age === "stale" ? "warning" : site.status;
   const card = $("#" + id + "-status");
   card.className = "card status-card" + (status === "error" ? " danger" : "");
   setBadge(card.querySelector(".badge"), status);
-  card.querySelector(".card-description").textContent = site.note;
-  card.querySelector(".meta").textContent = "기준 시각 대비: " + ageText(site.lastEventAt, now) + " · 발생 시각: " + dateText(site.lastEventAt);
+  card.querySelector(".card-description").textContent = site.loading ? noun + " 기록 정보를 가져오고 있습니다." : site.note;
+  card.querySelector(".meta").textContent = site.loading ? "기록 시각 조회 중" : "기준 시각 대비: " + ageText(site.lastEventAt, now) + " · 발생 시각: " + dateText(site.lastEventAt);
   $("#" + id + "-flow").replaceChildren(...timelineContent(label, site, now));
 }
 
@@ -358,6 +361,8 @@ let renderedHash = null;
 
 // 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
 function render(data = lastData) {
+  // 받은 자료가 없으면 응답을 기다리는 중입니다.
+  $("#page-content").setAttribute("aria-busy", data ? "false" : "true");
   const { route, id, isUnknown } = resolveRoute(location.hash);
   const name = id === "factory" ? "생산" : "출고";
   $("#route-notice").hidden = !isUnknown;
@@ -373,7 +378,21 @@ function render(data = lastData) {
   const queries = $("#queries-view");
   keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : [])), sameScreen);
   if (route === "records") renderRecords(data, id, sameScreen);
-  if (!data) return;
+  if (!data) {
+    // 응답 전: 화면이 처음 열릴 때와 같은 "조회 중" 글자를 다시 씁니다.
+    $("#hero").className = "hero neutral";
+    $("#hero-owner").hidden = true;
+    $("#hero-title").textContent = "자료 확인 중";
+    $("#hero-action").textContent = "운영 담당자 · 서버 연결 후 기록을 확인할 수 있습니다.";
+    renderSite("factory", { loading: true }, NaN);
+    renderSite("warehouse", { loading: true }, NaN);
+    const card = $("#alerts-status");
+    card.className = "card status-card";
+    setBadge(card.querySelector(".badge"), "loading");
+    card.querySelector(".card-description").textContent = "알림 전송 정보를 가져오고 있습니다.";
+    card.querySelector(".meta").textContent = "전송 시각 조회 중";
+    return;
+  }
   const issues = currentIssues(data);
   renderNotifications(issues);
   renderHero(issues);

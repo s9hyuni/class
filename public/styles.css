@@ -187,3 +187,11 @@ tr:last-child td { border-bottom: 0; }
   .help-btn:hover { background: var(--ink); color: #fff; }
 }
 .help-popover { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(300px, calc(100vw - 32px)); background: #28322c; color: #fff; font-size: 14px; line-height: 1.6; font-weight: 400; text-align: left; white-space: normal; overflow-wrap: break-word; padding: 12px 16px; border-radius: 8px; z-index: 100; box-shadow: 0 4px 14px #2227242e; }
+
+/* 4-5 조회 정보 줄 */
+.data-context { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 32px; }
+.data-context p, .view-context { color: var(--muted); font-size: 14px; }
+#updated-at:not(:empty)::after { content: ","; }
+@media (max-width: 700px) {
+  .data-context { margin-bottom: 24px; }
+}
