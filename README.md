@@ -23,3 +23,34 @@ git switch milestone-N
 ```
 
 화면은 Windows에서 `npm.cmd start`(macOS: `npm start`)로 켜고 `http://127.0.0.1:4173`을 엽니다. `milestone-4`부터는 `backend` 폴더에서 `npm.cmd ci`, `npm.cmd run build`, `npm.cmd start`로 서버도 켭니다(macOS는 `npm`).
+
+## 실행
+
+- Windows: `npm.cmd start`, macOS: `npm start`
+- 주소: http://127.0.0.1:4173
+- 서버를 켠 창을 닫거나 Ctrl+C를 누르면 멈춥니다.
+- 4173번 포트를 다른 프로그램이 쓰고 있으면 그 창을 먼저 닫습니다.
+
+## 검사
+
+- Windows: `npm.cmd run check` (macOS: `npm run check`)
+
+## 화면 주소
+
+| 주소 | 화면 |
+|---|---|
+| `#/today` | 오늘 운영 |
+| `#/records/factory` | 오늘 생산 기록 |
+| `#/records/warehouse` | 오늘 출고 기록 |
+| `#/queries/factory` | 생산 데이터 조회 기록 |
+| `#/queries/warehouse` | 출고 데이터 조회 기록 |
+
+## 단계별 `public/config.js` 값
+
+| 단계 | `apiBaseUrl` | `timeoutMs` |
+|---|---|---|
+| 1단계 강사 API | `"https://api-tumbler-dashboard.adapterz.kr"` | 5000 |
+| 2단계 내 서버 | `"http://127.0.0.1:3000"` | 5000 |
+| 3단계 내 GAS 웹 앱 | `"<GAS 웹앱 주소>"` | 15000 |
+
+단계를 바꿀 때는 `apiBaseUrl`과 `timeoutMs` 두 값만 바꿉니다. 3단계 GAS 웹 앱 주소를 받으면 이 표의 `<GAS 웹앱 주소>` 자리에 적어 둡니다.
