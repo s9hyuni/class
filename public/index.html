@@ -43,7 +43,32 @@
   <main id="main" tabindex="-1">
     <section id="page-content" aria-labelledby="page-title">
       <div class="page-heading"><h1 id="page-title">오늘 운영</h1><p id="page-description">생산·출고 실적과 운영 상태를 살펴봅니다.</p></div>
-      <div id="today-view"></div>
+      <div id="today-view">
+        <section id="hero" class="hero neutral">
+          <p class="eyebrow"><span>먼저 확인할 일</span></p>
+          <h2 id="hero-title">우선 확인할 문제가 없습니다.</h2>
+          <p id="hero-owner" class="attention-owner" hidden></p>
+          <p id="hero-action">운영 담당자 · 기록 갱신 상태를 계속 확인해 주세요.</p>
+        </section>
+        <div class="grid kpis two-columns">
+          <article class="card">
+            <p class="card-label"><span>공장 생산</span></p>
+            <p id="factory-quantity" class="value quantity-line"><span>생산 100개</span><span class="quantity-goal">· 목표 120개</span></p>
+            <p id="factory-progress-text" class="card-description">계획 대비 83.3%</p>
+            <progress id="factory-progress" class="production-progress" max="100" value="83.3"></progress>
+            <p id="factory-exceeded" class="meta" hidden>목표 초과</p>
+            <a class="card-link record-button" href="#/records/factory">생산 기록 보기</a>
+          </article>
+          <article class="card">
+            <p class="card-label"><span>창고 출고</span></p>
+            <p id="warehouse-quantity" class="value quantity-line"><span>출고 75개</span><span class="quantity-goal">· 목표 100개</span></p>
+            <p id="warehouse-progress-text" class="card-description">계획 대비 75.0%</p>
+            <progress id="warehouse-progress" class="production-progress" max="100" value="75"></progress>
+            <p id="warehouse-exceeded" class="meta" hidden>목표 초과</p>
+            <a class="card-link record-button" href="#/records/warehouse">출고 기록 보기</a>
+          </article>
+        </div>
+      </div>
     </section>
     <noscript><p class="notice warning">화면을 보려면 브라우저에서 자바스크립트를 허용해 주세요.</p></noscript>
   </main>
