@@ -87,3 +87,27 @@ for (const { id, label } of sites) {
   scroller.hidden = !hasPoints;
   scroller.replaceChildren(...(hasPoints ? [graphSvg(label, points)] : []));
 }
+
+// 상태 값과 화면 글자를 짝지은 객체입니다.
+const statusNames = { normal: "정상", warning: "확인 필요", error: "오류", sent: "전송 성공", failed: "실패", unknown: "확인 불가", waiting: "대기" };
+// 배지 하나를 상태에 맞게 바꿉니다. 객체에 없는 값은 "확인 필요"로 씁니다.
+function setBadge(node, value) {
+  const tone = ["normal", "sent"].includes(value) ? "good" : ["error", "failed"].includes(value) ? "danger" : "warning";
+  node.className = "badge " + tone;
+  node.textContent = statusNames[value] || "확인 필요";
+}
+
+for (const { id } of sites) {
+  const site = snapshot.sites[id];
+  const card = document.querySelector("#" + id + "-status");
+  card.className = "card status-card" + (site.status === "error" ? " danger" : "");
+  setBadge(card.querySelector(".badge"), site.status);
+  card.querySelector(".card-description").textContent = site.note;
+}
+
+const alerts = snapshot.services.alerts;
+const alertsCard = document.querySelector("#alerts-status");
+alertsCard.className = "card status-card" + (alerts.status === "failed" ? " danger" : "");
+setBadge(alertsCard.querySelector(".badge"), alerts.status);
+alertsCard.querySelector(".card-description").textContent = alerts.status === "sent" ? "알림 전송이 완료됐습니다." :
+  alerts.status === "failed" ? "담당자에게 알림을 전달하지 못했습니다." : "전송 기록을 확인할 수 없습니다.";
