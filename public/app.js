@@ -364,15 +364,66 @@ async function requestJson(url) {
     }
     // HTTP 오류는 응답 본문을 읽지 않습니다.
     if (!response.ok) throw new Error(httpErrorMessage(response.status));
+    let value;
     try {
-      return await response.json();
+      value = await response.json();
     } catch (error) {
       throw new Error(controller.signal.aborted ? timeoutMessage(limit) : NOT_JSON_MESSAGE, { cause: error });
     }
+    // GAS 웹 앱처럼 200으로 실패를 알리는 서버는 {error: 이유}를 보냅니다.
+    if (typeof value?.error === "string") throw new Error("서버가 요청을 처리하지 못했습니다. 서버가 알린 이유: " + value.error);
+    return value;
   } finally {
     clearTimeout(timer);
   }
 }
+// 받은 JSON의 모양을 API_CONTRACT.md 4절의 표 순서대로 검사하고, 처음 틀린 칸 하나를 알려 줍니다. 맞으면 null입니다.
+const TIME_TEXT = "시각 문자열(예: 2026-10-15T09:00:00+09:00)";
+const fieldError = (lead, path, expected) => lead + " 틀린 항목: " + path + " (기대: " + expected + ")";
+const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+function validateSnapshot(data) {
+  const base = (path, expected) => fieldError("서버 자료의 기본 형식을 확인해 주세요.", path, expected);
+  if (!isObject(data)) return base("(응답 전체)", "JSON 객체");
+  if (data.schemaVersion !== 1) return base("schemaVersion", "숫자 1");
+  if (!integer(data.revision) || data.revision < 1) return base("revision", "1 이상의 정수");
+  if (typeof data.scenarioId !== "string") return base("scenarioId", "문자열");
+  if (!time(data.changedAt)) return base("changedAt", TIME_TEXT);
+  if (!time(data.serverTime)) return base("serverTime", TIME_TEXT);
+  if (data.trainingOnly !== true) return base("trainingOnly", "true");
+  if (!isObject(data.sites)) return base("sites", "객체");
+  if (!isObject(data.services)) return base("services", "객체");
+  if (!Array.isArray(data.incidents)) return base("incidents", "배열");
+  const shape = (path, expected) => fieldError("서비스 상태의 형식을 확인해 주세요.", path, expected);
+  for (const [index, item] of data.incidents.entries()) {
+    const path = "incidents[" + index + "]";
+    if (!isObject(item)) return shape(path, "객체");
+    if (typeof item.id !== "string") return shape(path + ".id", "문자열");
+    if (!["warning", "error"].includes(item.level)) return shape(path + ".level", "\"warning\" 또는 \"error\"");
+    const key = ["title", "owner", "action"].find(name => typeof item[name] !== "string");
+    if (key) return shape(path + "." + key, "문자열");
+  }
+  if (data.viewTime !== undefined && (!time(data.viewTime) || Date.parse(data.viewTime) > Date.parse(data.serverTime))) {
+    return fieldError("조회 기준 시각을 확인해 주세요.", "viewTime", "serverTime 이전이거나 같은 " + TIME_TEXT);
+  }
+  return null;
+}
+// records의 기준 시각은 요청에 보낸 at입니다.
+function validateRecords(data, at) {
+  const lead = "기록 응답 형식이 올바르지 않습니다.";
+  if (!isObject(data)) return fieldError(lead, "(응답 전체)", "JSON 객체");
+  if (!Array.isArray(data.records)) return fieldError(lead, "records", "배열");
+  const limit = Date.parse(at), before = "기준 시각 이전이거나 같은 " + TIME_TEXT;
+  for (const [index, r] of data.records.entries()) {
+    const path = "records[" + index + "]";
+    if (!isObject(r)) return fieldError(lead, path, "객체");
+    if (!integer(r.quantity)) return fieldError(lead, path + ".quantity", "0 이상의 정수");
+    if (!time(r.occurredAt) || Date.parse(r.occurredAt) > limit) return fieldError(lead, path + ".occurredAt", before);
+    const key = ["receivedAt", "processedAt"].find(name => r[name] !== null && (!time(r[name]) || Date.parse(r[name]) > limit));
+    if (key) return fieldError(lead, path + "." + key, "null 또는 " + before);
+  }
+  return null;
+}
+
 // 서버 자료를 화면에 쓰기 전에 다듬습니다. 틀린 칸만 비우고 나머지는 그대로 씁니다.
 function normalizeSnapshot(data) {
   const normalized = { ...data, viewTime: data.viewTime || data.serverTime, sites: {}, services: {} };
@@ -404,7 +455,11 @@ function normalizeSnapshot(data) {
 }
 async function readSnapshot() {
   if (typeof config.apiBaseUrl !== "string" || !/^https?:\/\//.test(config.apiBaseUrl)) throw new Error("API 연결 주소가 설정되지 않았습니다.");
-  return normalizeSnapshot(await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot")));
+  const data = await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot"));
+  // 모양이 틀리면 실패로 처리해 마지막 성공 자료를 덮어쓰지 않습니다.
+  const problem = validateSnapshot(data);
+  if (problem) throw new Error(problem);
+  return normalizeSnapshot(data);
 }
 
 // 조회 상태는 마지막 성공 자료(lastData), 마지막 성공 시각(lastSuccessAt), 지금 오류 문구(errorText) 셋으로 나눠 둡니다.
@@ -577,6 +632,8 @@ async function loadRecords(at) {
   if (recordTo) params.set("to", new Date(recordTo + "+09:00").toISOString());
   try {
     const data = await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/records", params));
+    const problem = validateRecords(data, at);
+    if (problem) throw new Error(problem);
     if (requestId === recordsRequestId) { recordsData = data; recordsError = ""; }
   } catch (error) {
     if (requestId === recordsRequestId) { recordsData = null; recordsError = String(error?.message || error); }
