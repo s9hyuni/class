@@ -338,15 +338,37 @@ function apiUrl(base, path, params = "") {
   if (address.endsWith("/exec")) return address + "?path=" + path + (query ? "&" + query : "");
   return address + path + (query ? "?" + query : "");
 }
-// GET으로 JSON을 받습니다. config.timeoutMs가 지나면 요청을 멈추고 오류를 던집니다.
+// 실패는 시간 초과·연결 실패·HTTP 오류·JSON 아님 네 갈래로 나눠 알립니다.
+const RETRY_HINT = "잠시 후 다시 조회하고, 계속되면 서버를 실행한 창의 기록(로그)을 확인하거나 강사에게 알려 주세요.";
+const CONNECTION_MESSAGE = "API 서버에 연결하지 못했습니다. 연결 주소가 맞는지, 직접 띄운 서버라면 켜져 있는지 확인해 주세요. GAS 웹 앱이라면 편집기에서 함수를 한 번 실행해 권한을 승인했는지도 확인해 주세요.";
+const NOT_JSON_MESSAGE = "서버 응답이 JSON 형식이 아닙니다. 연결 주소가 API 서버 주소인지 확인해 주세요.";
+// 5000이면 5, 100이면 0.1, 15000이면 15초입니다(소수 첫째 자리까지 반올림).
+const timeoutMessage = (ms) => "서버가 " + Math.round(ms / 100) / 10 + "초 안에 응답하지 않았습니다. " + RETRY_HINT;
+function httpErrorMessage(status) {
+  if (status === 400) return "서버가 요청 조건을 받아들이지 않았습니다(HTTP 400).";
+  if (status === 404) return "서버에 요청한 주소가 없습니다(HTTP 404). 연결 주소를 확인해 주세요.";
+  if (status >= 500) return "서버가 요청을 처리하지 못했습니다(HTTP " + status + "). " + RETRY_HINT;
+  return "서버가 요청을 거절했습니다(HTTP " + status + ").";
+}
+// GET으로 JSON을 받습니다. snapshot과 records가 이 함수를 함께 씁니다.
 async function requestJson(url) {
   const limit = typeof config.timeoutMs === "number" ? config.timeoutMs : 5000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), limit);
   try {
-    const response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" }, signal: controller.signal });
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    return await response.json();
+    let response;
+    try {
+      response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" }, signal: controller.signal });
+    } catch (error) {
+      throw new Error(controller.signal.aborted ? timeoutMessage(limit) : CONNECTION_MESSAGE, { cause: error });
+    }
+    // HTTP 오류는 응답 본문을 읽지 않습니다.
+    if (!response.ok) throw new Error(httpErrorMessage(response.status));
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error(controller.signal.aborted ? timeoutMessage(limit) : NOT_JSON_MESSAGE, { cause: error });
+    }
   } finally {
     clearTimeout(timer);
   }
