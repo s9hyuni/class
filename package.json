@@ -4,6 +4,13 @@
   "private": true,
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "check": "node --check public/app.js && node --check public/config.js && node --check scripts/serve.mjs"
+    "check": "node --check public/app.js && node --check public/config.js && node --check scripts/serve.mjs",
+    "gas:login": "npx --yes @google/clasp@3.4.1 login",
+    "gas:create": "node scripts/gas-clasp.mjs create",
+    "gas:push": "npx --yes @google/clasp@3.4.1 push --force",
+    "gas:deploy": "node scripts/gas-clasp.mjs deploy",
+    "gas:redeploy": "node scripts/gas-clasp.mjs redeploy",
+    "gas:open": "node scripts/gas-clasp.mjs open",
+    "gas:editor": "npx --yes @google/clasp@3.4.1 open-script"
   }
 }
