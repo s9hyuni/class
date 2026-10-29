@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { validRecord } from "./records";
+import { businessDate, validRecord } from "./records";
 import { isScenarioId, ScenarioId } from "./scenarios";
 import { newSession, Session, Transition } from "./timeline";
 
@@ -67,6 +67,62 @@ export class StateService {
       const changedAt = new Date().toISOString();
       this.state = this.save({ ...newSession(changedAt, 1), scenarioId: "normal", revision: 1, changedAt });
     }
+  }
+
+  private view(at?: string) {
+    const now = new Date().toISOString();
+    const value = at === undefined ? now : at;
+    if (
+      !value ||
+      !/^\d{4}-\d{2}-\d{2}T/.test(value) ||
+      !/(Z|[+-]\d{2}:\d{2})$/i.test(value) ||
+      !Number.isFinite(Date.parse(value)) ||
+      Date.parse(value) > Date.parse(now) ||
+      businessDate(value) !== businessDate(now)
+    ) {
+      throw new BadRequestException("오늘의 현재 이전 시각을 선택해 주세요.");
+    }
+    return { now, value: new Date(value).toISOString() };
+  }
+
+  records(kind: string, from?: string, to?: string, at?: string) {
+    if (kind !== "production" && kind !== "shipment") {
+      throw new BadRequestException("생산 또는 출고 기록을 선택해 주세요.");
+    }
+    return this.query(kind, this.view(at), from, to);
+  }
+
+  private query(kind: string, view: { now: string; value: string }, from?: string, to?: string) {
+    const start = from || businessDate(view.value) + "T00:00:00+09:00";
+    const end = to || view.value;
+    const validBound = (value: string) =>
+      /(Z|[+-]\d{2}:\d{2})$/i.test(value) &&
+      Number.isFinite(Date.parse(value)) &&
+      businessDate(value) === businessDate(view.value);
+    if (
+      !validBound(start) ||
+      !validBound(end) ||
+      Date.parse(start) > Date.parse(end) ||
+      Date.parse(end) > Date.parse(view.value)
+    ) {
+      throw new BadRequestException("조회 시간 구간을 확인해 주세요.");
+    }
+    const cutoff = Date.parse(view.value);
+    const records = this.state.records
+      .filter(
+        (r) =>
+          r.kind === kind &&
+          Date.parse(start) <= Date.parse(r.occurredAt) &&
+          Date.parse(r.occurredAt) <= Date.parse(end),
+      )
+      .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt))
+      .map((r) => {
+        const receivedAt = r.receivedAt && Date.parse(r.receivedAt) <= cutoff ? r.receivedAt : null;
+        const processedAt = r.processedAt && Date.parse(r.processedAt) <= cutoff ? r.processedAt : null;
+        const status = processedAt ? "completed" : receivedAt ? "processing-wait" : "receipt-wait";
+        return { ...r, receivedAt, processedAt, status };
+      });
+    return { sessionId: this.state.sessionId, viewTime: view.value, records };
   }
 
   private save(next: Stored): Stored {
