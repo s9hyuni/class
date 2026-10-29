@@ -318,9 +318,38 @@ async function requestJson(url) {
     clearTimeout(timer);
   }
 }
+// 서버 자료를 화면에 쓰기 전에 다듬습니다. 틀린 칸만 비우고 나머지는 그대로 씁니다.
+function normalizeSnapshot(data) {
+  const normalized = { ...data, viewTime: data.viewTime || data.serverTime, sites: {}, services: {} };
+  for (const id of ["factory", "warehouse"]) {
+    const value = data.sites?.[id] || {};
+    const site = {
+      target: integer(value.target) ? value.target : null,
+      completed: integer(value.completed) ? value.completed : null,
+      status: ["normal", "warning", "error"].includes(value.status) ? value.status : "unknown",
+      note: typeof value.note === "string" ? value.note : "기록 대기",
+      processingState: ["completed", "paused", "waiting"].includes(value.processingState) ? value.processingState : time(value.processedAt) ? "completed" : "waiting"
+    };
+    for (const key of ["lastEventAt", "receivedAt", "processedAt"]) {
+      site[key] = time(value[key]) && Date.parse(value[key]) <= Date.parse(normalized.viewTime) ? value[key] : null;
+    }
+    const history = value.history;
+    site.history = Array.isArray(history) && history.length <= 24 &&
+      history.every(point => point && time(point.timestamp) && Date.parse(point.timestamp) <= Date.parse(data.serverTime) && integer(point.quantity)) ?
+      [...history].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)) : [];
+    site.image = value.image && typeof value.image.url === "string" && typeof value.image.alt === "string" ? value.image : null;
+    normalized.sites[id] = site;
+  }
+  const alerts = data.services?.alerts || {};
+  normalized.services.alerts = {
+    status: ["sent", "failed"].includes(alerts.status) ? alerts.status : "unknown",
+    lastAttemptAt: time(alerts.lastAttemptAt) ? alerts.lastAttemptAt : null
+  };
+  return normalized;
+}
 async function readSnapshot() {
   if (typeof config.apiBaseUrl !== "string" || !/^https?:\/\//.test(config.apiBaseUrl)) throw new Error("API 연결 주소가 설정되지 않았습니다.");
-  return requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot"));
+  return normalizeSnapshot(await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot")));
 }
 
 let lastData = null;
