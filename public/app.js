@@ -126,3 +126,31 @@ setBadge(alertsCard.querySelector(".badge"), alerts.status);
 alertsCard.querySelector(".card-description").textContent = alerts.status === "sent" ? "알림 전송이 완료됐습니다." :
   alerts.status === "failed" ? "담당자에게 알림을 전달하지 못했습니다." : "전송 기록을 확인할 수 없습니다.";
 alertsCard.querySelector(".meta").textContent = "마지막 전송 시도: " + dateText(alerts.lastAttemptAt);
+
+// 기록 처리 상태 카드는 안쪽을 새로 그립니다. 처리 시각이 없다는 것만으로 "처리 중단"이라고 쓰지 않습니다.
+const el = (tag, className = "", value) => {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (value !== undefined) node.textContent = value;
+  return node;
+};
+for (const { id, label } of sites) {
+  const site = snapshot.sites[id];
+  const status = siteStatus(site, now);
+  const top = el("div", "status-line");
+  const badge = el("span");
+  setBadge(badge, status);
+  top.append(el("h3", "", label), badge);
+  const items = [top, el("p", "card-description", site.note)];
+  if (status === "warning" && time(site.lastEventAt) && now - Date.parse(site.lastEventAt) > 30 * 60000) items.push(el("p", "notice", "기록이 30분 넘게 들어오지 않았습니다."));
+  if (!time(site.lastEventAt)) items.push(el("p", "notice", "현장 기록을 기다리고 있습니다."));
+  const list = el("dl", "time-list");
+  for (const [key, name] of [["lastEventAt", "기록 발생"], ["receivedAt", "서버 접수"], ["processedAt", "서버 처리"]]) {
+    const row = el("div");
+    const value = time(site[key]) ? dateText(site[key]) : key === "processedAt" && site.processingState === "paused" ? "처리 중단" : "기록 대기";
+    row.append(el("dt", "", name), el("dd", "", value));
+    list.append(row);
+  }
+  items.push(list);
+  document.querySelector("#" + id + "-flow").replaceChildren(...items);
+}
