@@ -80,7 +80,7 @@ function graphSvg(label, points) {
   }
   return svg;
 }
-// 그래프 칸(.graph-scroll) 안쪽만 새로 그립니다.
+// 그래프 칸(.graph-scroll) 안의 SVG만 바꿉니다. 바꾸기 전 가로 스크롤 위치를 기억했다가 되돌립니다.
 function renderGraph(box, label, points) {
   const scroller = box.querySelector(".graph-scroll");
   const hasPoints = Array.isArray(points) && points.length > 0;
@@ -88,7 +88,9 @@ function renderGraph(box, label, points) {
   box.querySelector(".graph-empty").hidden = hasPoints;
   box.querySelector(".graph-caption").hidden = !hasPoints;
   scroller.hidden = !hasPoints;
+  const left = scroller.scrollLeft;
   scroller.replaceChildren(...(hasPoints ? [graphSvg(label, points)] : []));
+  scroller.scrollLeft = left;
 }
 
 // ── 기록 처리 상태 카드 안쪽 ──
@@ -166,9 +168,26 @@ function table(headers, rows) {
   return wrap;
 }
 const recordStatus = (value) => value === "completed" ? "완료" : value === "receipt-wait" ? "접수 대기" : "처리 대기";
+// 같은 화면(sameScreen)이면 다시 그리기 전에 .table-scroll과 .history-strip의 가로 스크롤 위치와 초점을 읽어 두었다가
+// 새로 생긴 같은 이름의 요소에 되돌립니다. 떼어 낸 요소의 scrollLeft는 0이 되므로 반드시 그리기 전에 읽습니다.
+function keepScroll(box, draw, sameScreen) {
+  const before = !sameScreen ? [] : [".table-scroll", ".history-strip"].map(selector => {
+    const old = box.querySelector(selector);
+    return old && [selector, old.scrollLeft, old === document.activeElement];
+  }).filter(Boolean);
+  draw();
+  for (const [selector, left, focused] of before) {
+    const next = box.querySelector(selector);
+    if (!next) continue;
+    next.scrollLeft = left;
+    if (focused) next.focus({ preventScroll: true });
+  }
+}
 // "시간대 조회"로 고른 시작·종료 값입니다. 고르기 전에는 기본값(기준 시각 날짜의 00:00:00, 기준 시각)을 씁니다.
 let recordFrom = "", recordTo = "";
-function renderRecords(data, id) {
+// 지난번에 그린 기록 표 내용입니다. 같으면 다시 만들지 않아 같은 표 요소가 그대로 남습니다.
+let recordsView = "";
+function renderRecords(data, id, sameScreen) {
   const view = data.viewTime;
   const from = $("#record-from"), to = $("#record-to");
   from.min = to.min = day(view) + "T00:00:00";
@@ -179,7 +198,10 @@ function renderRecords(data, id) {
   const records = window.SAMPLE_RECORDS[id === "factory" ? "production" : "shipment"]
     .filter(r => Date.parse(r.occurredAt) >= start && Date.parse(r.occurredAt) <= end);
   const rows = records.map(r => [dateText(r.occurredAt), r.quantity + "개", r.receivedAt ? dateText(r.receivedAt) : "접수 대기", r.processedAt ? dateText(r.processedAt) : "처리 대기", recordStatus(r.status)]);
-  $("#records-result").replaceChildren(rows.length ? table(["발생 시각", "수량", "서버 접수", "서버 처리", "상태"], rows) : el("p", "notice", "선택한 시간대에 기록이 없습니다."));
+  const result = $("#records-result"), key = JSON.stringify(rows);
+  if (recordsView === key) return;
+  recordsView = key;
+  keepScroll(result, () => result.replaceChildren(rows.length ? table(["발생 시각", "수량", "서버 접수", "서버 처리", "상태"], rows) : el("p", "notice", "선택한 시간대에 기록이 없습니다.")), sameScreen);
 }
 
 // ── 알림 목록과 먼저 확인할 일 ──
@@ -275,6 +297,8 @@ function setupHelp(btn) {
 }
 
 let lastData = window.SAMPLE_SNAPSHOT;
+// 지난 render의 주소(# 부분)입니다. 같으면 "같은 화면", 다르면 "주소가 바뀐 뒤 처음 그림"으로 봅니다.
+let renderedHash = null;
 
 // 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
 function render(data = lastData) {
@@ -288,8 +312,11 @@ function render(data = lastData) {
   $("#page-title").textContent = route === "records" ? "오늘 " + name + " 기록" : route === "queries" ? name + " 데이터 조회 기록" : "오늘 운영";
   $("#page-description").textContent = route === "records" ? "선택한 기준 시각까지의 기록입니다. 수량은 수정하지 않습니다." :
     route === "queries" ? "이 브라우저 탭의 최근 200건입니다. 실제 요청 시각과 조회 대상 시각을 구분합니다." : "생산·출고 실적과 운영 상태를 살펴봅니다.";
-  $("#queries-view").replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : []));
-  if (route === "records") renderRecords(data, id);
+  const sameScreen = location.hash === renderedHash;
+  renderedHash = location.hash;
+  const queries = $("#queries-view");
+  keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : [])), sameScreen);
+  if (route === "records") renderRecords(data, id, sameScreen);
   const issues = currentIssues(data);
   renderNotifications(issues);
   renderHero(issues);
@@ -312,6 +339,21 @@ $("#record-filter").addEventListener("submit", (event) => {
   recordFrom = $("#record-from").value;
   recordTo = $("#record-to").value;
   render();
+});
+// 아래 이벤트는 페이지를 열 때 한 번만 붙입니다. render 때마다 다시 붙이지 않습니다.
+for (const scroller of document.querySelectorAll(".graph-scroll")) {
+  scroller.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    scroller.scrollLeft = event.key === "Home" ? 0 : event.key === "End" ? scroller.scrollWidth :
+      scroller.scrollLeft + (event.key === "ArrowRight" ? 90 : -90);
+  });
+}
+// "본문으로 이동"은 주소를 #main으로 바꾸지 않고 초점만 옮깁니다(없는 주소 안내가 뜨지 않게).
+$(".skip-link").addEventListener("click", (event) => {
+  event.preventDefault();
+  $("#main").focus({ preventScroll: true });
+  $("#main").scrollIntoView({ block: "start" });
 });
 $("#header-alerts-link").addEventListener("click", () => toggleNotifications());
 for (const btn of document.querySelectorAll(".help-btn")) setupHelp(btn);
