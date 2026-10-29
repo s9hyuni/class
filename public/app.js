@@ -215,15 +215,22 @@ let recordFrom = "", recordTo = "", draftFrom = "", draftTo = "";
 let recordsLoading = false, recordsRequestId = 0;
 // 지난번에 그린 기록 표 내용입니다. 같으면 다시 만들지 않아 같은 표 요소가 그대로 남습니다.
 let recordsView = "";
+// 종료가 시작보다 이르면 종료 칸에 안내를 겁니다. 시작과 종료가 같으면 허용합니다.
+// 비었거나 형식이 틀린 값은 Date.parse가 NaN이라 여기서 막지 않고 required·min·max 검사에 맡깁니다.
+function checkRecordRange() {
+  const from = $("#record-from"), to = $("#record-to");
+  to.setCustomValidity(Date.parse(to.value + "+09:00") < Date.parse(from.value + "+09:00") ? "끝 시각은 시작 시각과 같거나 늦어야 합니다." : "");
+}
 function renderRecords(data, id, sameScreen) {
-  // 첫 응답 전이면 브라우저 시계의 지금 시각으로 기본값과 min·max를 정합니다.
-  const view = data?.viewTime || new Date().toISOString();
+  // 기준 시각은 마지막 snapshot의 viewTime, 자료가 없으면 고른 과거 시각, 그것도 없으면 브라우저 시계의 지금입니다.
+  const view = data?.viewTime || selectedAt || new Date().toISOString();
   // 칸의 값은 고친 값, 없으면 기억한 값, 그것도 없으면 기본값입니다. 초점이 있는 칸은 덮어쓰지 않습니다.
   for (const [input, value] of [[$("#record-from"), draftFrom || recordFrom || day(view) + "T00:00:00"], [$("#record-to"), draftTo || recordTo || localTime(view)]]) {
     input.min = day(view) + "T00:00:00";
     input.max = localTime(view);
     if (document.activeElement !== input) input.value = value;
   }
+  checkRecordRange();
   const rows = recordsData?.records?.map(r => [dateText(r.occurredAt), r.quantity + "개", r.receivedAt ? dateText(r.receivedAt) : "접수 대기", r.processedAt ? dateText(r.processedAt) : "처리 대기", recordStatus(r.status)]);
   // snapshot 조회가 실패해 기록 요청을 보내지 못했으면 그렇다고 알립니다.
   const missed = errorText && !recordsLoading;
@@ -635,11 +642,17 @@ function render(data = lastData) {
 }
 
 for (const [key, input] of [["from", $("#record-from")], ["to", $("#record-to")]]) {
-  input.addEventListener("input", () => { if (key === "from") draftFrom = input.value; else draftTo = input.value; });
+  input.addEventListener("input", () => {
+    if (key === "from") draftFrom = input.value; else draftTo = input.value;
+    checkRecordRange();
+  });
 }
 // "시간대 조회"는 표를 직접 그리지 않고 poll()에 맡깁니다. 조회 중이면 새 시간대만 기억해 두었다가 그 조회가 끝난 뒤 받습니다.
 $("#record-filter").addEventListener("submit", (event) => {
   event.preventDefault();
+  // 종료가 시작보다 이르면 기록 요청을 보내지 않고 브라우저 안내를 보입니다.
+  checkRecordRange();
+  if (!$("#record-filter").reportValidity()) return;
   recordFrom = $("#record-from").value;
   recordTo = $("#record-to").value;
   recordsRequestId++;
