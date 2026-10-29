@@ -460,12 +460,14 @@ function normalizeSnapshot(data) {
   };
   return normalized;
 }
-async function readSnapshot() {
+// at이 있으면 그 기준 시각(과거)의 자료를 요청합니다.
+async function readSnapshot(at = "") {
   if (typeof config.apiBaseUrl !== "string" || !/^https?:\/\//.test(config.apiBaseUrl)) throw new Error("API 연결 주소가 설정되지 않았습니다.");
-  const data = await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot"));
+  const data = await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot", at ? new URLSearchParams({ at }) : ""));
   // 모양이 틀리면 실패로 처리해 마지막 성공 자료를 덮어쓰지 않습니다.
   const problem = validateSnapshot(data);
   if (problem) throw new Error(problem);
+  if (at && (!time(data.viewTime) || Date.parse(data.viewTime) !== Date.parse(at))) throw new Error("요청한 기준 시각과 서버 자료의 시각이 다릅니다.");
   return normalizeSnapshot(data);
 }
 
@@ -481,6 +483,10 @@ let nextPollAt = null;
 let pollTimer = null;
 const refreshBtn = $("#refresh-btn");
 const countdownText = $("#countdown-text");
+// 고른 과거 기준 시각(현재면 "")과, 기준 시각이나 화면 주소가 바뀔 때마다 오르는 번호입니다.
+// poll은 시작할 때의 번호를 기억했다가, 응답이 왔을 때 번호가 바뀌었으면 그 응답을 버립니다.
+let selectedAt = "";
+let viewGeneration = 0;
 // 지난 render의 주소(# 부분)입니다. 같으면 "같은 화면", 다르면 "주소가 바뀐 뒤 처음 그림"으로 봅니다.
 let renderedHash = null;
 
@@ -492,7 +498,7 @@ function render(data = lastData) {
   freshnessBadge.textContent = errorText ? "조회 실패" : data ? "조회 정상" : "확인 중";
   freshnessBadge.className = "connection-status " + (errorText ? "danger" : data ? "good" : "neutral");
   $("#updated-at").textContent = lastSuccessAt ? "마지막 조회 성공: " + dateText(lastSuccessAt) : "조회 성공 기록이 없습니다.";
-  $("#view-context").textContent = "현재 시각 기준";
+  updateViewControl();
   const notice = $("#data-errors");
   notice.hidden = !errorText;
   notice.textContent = errorText ? "현재 자료를 가져오지 못했습니다. " + errorText +
@@ -578,7 +584,8 @@ $(".skip-link").addEventListener("click", (event) => {
 $("#header-alerts-link").addEventListener("click", () => toggleNotifications());
 for (const btn of document.querySelectorAll(".help-btn")) setupHelp(btn);
 document.addEventListener("click", (event) => {
-  if (!event.target.closest(".notification-wrap")) toggleNotifications(false);
+  // "현재로 돌아가기"는 누르는 순간 다시 그려져 문서에서 떨어지지만, closest는 떨어진 버튼 자신도 찾습니다.
+  if (!event.target.closest(".notification-wrap") && !event.target.closest(".inline-button")) toggleNotifications(false);
   if (!event.target.closest(".help-wrap")) for (const pop of openHelps()) closeHelp(pop);
 });
 // Escape는 이 처리기 하나에서 받아 열린 알림 목록과 도움말을 함께 닫습니다.
@@ -599,6 +606,7 @@ window.addEventListener("resize", () => {
 });
 // 다른 화면으로 옮기면 기억한 시간대·고친 칸 값·받아 둔 기록을 비웁니다. 기록 화면으로 들어오면 바로 조회합니다.
 window.addEventListener("hashchange", () => {
+  viewGeneration++;
   recordsRequestId++;
   recordsLoading = false;
   recordsData = null; recordsError = ""; recordFrom = ""; recordTo = ""; draftFrom = ""; draftTo = "";
@@ -606,30 +614,88 @@ window.addEventListener("hashchange", () => {
   render();
   if (resolveRoute(location.hash).route === "records" && !polling) poll();
 });
+// ── 기준 시각 고르기 ──
+// 선택지는 "현재"와 한국 시간 오늘 00:00부터 지금까지의 정시, 그리고 정시가 아닌 최근 조회 시각과 고른 시각입니다.
+// 초점이 있는 동안에는 다시 만들지 않아 목록을 고르는 중에 10초 조회가 와도 위치가 풀리지 않습니다.
+// 기준 시각을 바꾼 때(rebuild)는 초점이 있어도 한 번 다시 만듭니다. Chrome은 마우스로 고른 뒤에도 초점을 남기기 때문입니다.
+function updateViewControl(rebuild = false) {
+  const select = $("#view-time");
+  if (rebuild || document.activeElement !== select) {
+    const now = lastData?.serverTime || new Date().toISOString(), date = day(now);
+    const current = el("option", "", "현재");
+    current.value = "";
+    const options = [current];
+    for (let hour = 0; hour < 24; hour++) {
+      const value = new Date(date + "T" + String(hour).padStart(2, "0") + ":00:00+09:00").toISOString();
+      if (Date.parse(value) > Date.parse(now)) break;
+      const option = el("option", "", String(hour).padStart(2, "0") + ":00");
+      option.value = value;
+      options.push(option);
+    }
+    const successTime = lastData?.serverTime;
+    for (const value of [successTime, selectedAt].filter(Boolean)) {
+      if (options.some(o => o.value === value) || day(value) !== date || Date.parse(value) > Date.parse(now)) continue;
+      const option = el("option", "", localTime(value).slice(11) + (value === successTime ? " (최근 조회)" : ""));
+      option.value = value;
+      options.push(option);
+    }
+    select.replaceChildren(...options);
+    select.value = selectedAt;
+  }
+  const context = $("#view-context");
+  context.replaceChildren(el("span", "", selectedAt ? dateText(selectedAt) + " 기준 · 과거 자료" : "현재 시각 기준"));
+  if (selectedAt) {
+    const back = el("button", "inline-button", "현재로 돌아가기");
+    back.type = "button";
+    back.addEventListener("click", () => changeView(""));
+    context.append(back);
+  }
+}
+// 기준 시각을 바꿉니다. 예약한 조회와 이전 자료·오류·기록·기억한 시간대를 비우고 새 시각으로 다시 조회합니다.
+function changeView(at) {
+  clearSchedule();
+  recordsRequestId++;
+  recordsLoading = false;
+  selectedAt = at;
+  viewGeneration++;
+  lastData = null; lastSuccessAt = null; errorText = "";
+  recordsData = null; recordsError = ""; recordFrom = ""; recordTo = ""; draftFrom = ""; draftTo = "";
+  updateCountdown();
+  updateViewControl(true);
+  render();
+  // 조회 중이면 새 요청을 보내지 않습니다. 앞 조회가 끝나면 번호가 바뀐 것을 보고 바로 다시 조회합니다.
+  if (!polling) poll();
+}
+
 // 조회는 이 함수 하나로 합니다. 조회 중이면 아무것도 하지 않아 요청이 겹치지 않습니다.
 async function poll() {
   if (polling) return;
   clearSchedule();
   polling = true;
+  const generation = viewGeneration, at = selectedAt;
   updateRefreshButton();
   try {
-    lastData = await readSnapshot();
+    const incoming = await readSnapshot(at);
+    // 기준 시각이나 화면 주소가 바뀐 뒤 온 응답은 화면에 쓰지 않고 버립니다.
+    if (generation !== viewGeneration) return;
+    lastData = incoming;
     lastSuccessAt = new Date().toISOString();
     errorText = "";
     // 기록은 따로 받아 snapshot 화면 갱신을 기다리게 하지 않습니다.
-    void loadRecords(lastData.viewTime);
+    void loadRecords(incoming.viewTime, generation);
   } catch (error) {
-    errorText = String(error?.message || error);
+    if (generation === viewGeneration) errorText = String(error?.message || error);
   } finally {
     polling = false;
     updateRefreshButton();
     render();
-    // 다음 조회는 응답이 온 뒤에 예약합니다.
-    scheduleNextPoll();
+    // 번호가 바뀌었으면 10초를 기다리지 않고 바로 다시 조회하고, 같으면 10초 뒤를 예약합니다(응답이 온 뒤에 예약).
+    if (generation !== viewGeneration) poll();
+    else scheduleNextPoll();
   }
 }
 // 기록 화면에 있을 때 /api/v1/records로 기록을 받습니다.
-async function loadRecords(at) {
+async function loadRecords(at, generation) {
   const { route, id } = resolveRoute(location.hash);
   // 같은 화면의 기록 요청이 아직 진행 중이면 새로 보내지 않고 그 응답을 기다립니다.
   if (route !== "records" || recordsLoading) return;
@@ -642,14 +708,12 @@ async function loadRecords(at) {
     const data = await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/records", params));
     const problem = validateRecords(data, at);
     if (problem) throw new Error(problem);
-    if (requestId === recordsRequestId) { recordsData = data; recordsError = ""; }
+    if (generation === viewGeneration && requestId === recordsRequestId) { recordsData = data; recordsError = ""; }
   } catch (error) {
-    if (requestId === recordsRequestId) { recordsData = null; recordsError = String(error?.message || error); }
+    if (generation === viewGeneration && requestId === recordsRequestId) { recordsData = null; recordsError = String(error?.message || error); }
   } finally {
-    if (requestId === recordsRequestId) {
-      recordsLoading = false;
-      render();
-    }
+    if (requestId === recordsRequestId) recordsLoading = false;
+    if (generation === viewGeneration && requestId === recordsRequestId) render();
   }
 }
 function clearSchedule() {
@@ -657,15 +721,19 @@ function clearSchedule() {
   pollTimer = null;
   nextPollAt = null;
 }
-// 새로 예약하기 전에 늘 이전 예약을 지워 타이머가 두 개 이상 생기지 않게 합니다.
+// 새로 예약하기 전에 늘 이전 예약을 지워 타이머가 두 개 이상 생기지 않게 합니다. 과거 시각에서는 자동 조회를 멈춥니다.
 function scheduleNextPoll() {
   clearSchedule();
+  if (selectedAt) { updateCountdown(); return; }
   nextPollAt = Date.now() + POLL_INTERVAL_MS;
   pollTimer = setTimeout(() => { clearSchedule(); poll(); }, POLL_INTERVAL_MS);
   updateCountdown();
 }
 // 0.25초마다 남은 초만 고칩니다. 숨긴 탭에서 타이머가 늦어 예약 시각이 지났으면 바로 조회합니다.
 function updateCountdown() {
+  // 과거 시각에서는 카운트다운을 숨깁니다.
+  countdownText.hidden = !!selectedAt;
+  if (selectedAt) return;
   if (polling || !nextPollAt) { countdownText.textContent = "조회 중…"; return; }
   const left = nextPollAt - Date.now();
   if (left <= 0) { clearSchedule(); poll(); return; }
@@ -678,6 +746,7 @@ function updateRefreshButton() {
   refreshBtn.setAttribute("aria-busy", String(polling));
   refreshBtn.classList.toggle("loading", polling);
 }
+$("#view-time").addEventListener("change", (event) => changeView(event.target.value));
 refreshBtn.addEventListener("click", () => {
   if (polling) return;
   clearSchedule();
