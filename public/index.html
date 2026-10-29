@@ -13,7 +13,31 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="#/today" aria-label="텀블공장 관제 대시보드 오늘 운영"><img class="brand-logo" src="./assets/tumble-factory-logo.png" alt=""><span class="brand-copy"><strong>텀블공장</strong><span class="brand-site-name">관제 대시보드</span></span></a>
-      <div class="header-actions"></div>
+      <div class="header-actions">
+        <label class="view-time-control">기준 시각 <select id="view-time" aria-label="기준 시각"><option value="">현재</option></select></label>
+        <span id="freshness" class="connection-status neutral" role="status">확인 중</span>
+        <div class="refresh-wrap">
+          <button id="refresh-btn" type="button" class="refresh-btn" aria-label="데이터 새로고침" title="데이터 새로고침">
+            <svg class="refresh-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 2v6h-6"></path>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+              <path d="M3 22v-6h6"></path>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
+          </button>
+          <span id="countdown-text" class="countdown-text" aria-hidden="true">조회 중…</span>
+        </div>
+        <div class="notification-wrap">
+          <button id="header-alerts-link" type="button" class="alerts-link neutral" aria-label="알림 확인 중" aria-expanded="false" aria-controls="notification-dropdown">
+            <svg class="bell-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span id="header-alerts-text" class="alerts-text">알림 확인 중</span>
+          </button>
+          <section id="notification-dropdown" class="notification-dropdown" aria-label="알림 목록" hidden></section>
+        </div>
+      </div>
     </div>
   </header>
   <main id="main" tabindex="-1">
