@@ -33,3 +33,57 @@ for (const { id, noun, label } of sites) {
   bar.setAttribute("aria-label", label + " 목표 달성률 " + rateText);
   exceeded.hidden = !(completed > target);
 }
+
+// 시각을 한국 시간 "2026. 10. 26. 09:00:00" 꼴로 바꿉니다. hour12를 함께 쓰면 hourCycle이 무시되어 자정이 "24시"로 나올 수 있어 쓰지 않습니다.
+const time = (value) => typeof value === "string" && Number.isFinite(Date.parse(value));
+const dateFormat = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+});
+const hourFormat = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", hourCycle: "h23" });
+const dateText = (value) => time(value) ? dateFormat.format(new Date(value)) : "기록 없음";
+const hourText = (value) => time(value) ? hourFormat.format(new Date(value)) : "기록 없음";
+
+const SVG = "http://www.w3.org/2000/svg";
+const HOUR = 3600000;
+// 막대 하나가 한 시간입니다. 기록이 없는 시간은 빈자리로 두고 0 막대를 만들지 않습니다.
+function graphSvg(label, points) {
+  const max = Math.max(1, ...points.map(p => p.quantity));
+  const first = Date.parse(points[0].timestamp);
+  const slots = Math.round((Date.parse(points[points.length - 1].timestamp) - first) / HOUR) + 1;
+  const width = 80 + slots * 90;
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("viewBox", "0 0 " + width + " 190");
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", "190");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", label + " 시간별 완료 수량: " + points.map(p => dateText(p.timestamp) + " " + p.quantity + "개").join(", "));
+  const draw = (tag, attrs, text) => {
+    const node = document.createElementNS(SVG, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    if (text !== undefined) node.textContent = text;
+    svg.append(node);
+  };
+  draw("text", { x: 0, y: 20, "font-size": 16, fill: "#545b57" }, "개");
+  draw("line", { x1: 35, y1: 150, x2: width - 15, y2: 150, stroke: "#bfc7c1" });
+  for (const p of points) {
+    const x = 40 + Math.round((Date.parse(p.timestamp) - first) / HOUR) * 90;
+    const height = p.quantity / max * 95;
+    draw("rect", { x, y: 150 - height, width: 38, height, rx: 3, fill: "#47594d" });
+    draw("text", { x, y: 145 - height, "font-size": 16, fill: "#222724" }, String(p.quantity));
+    draw("text", { x, y: 177, "font-size": 16, fill: "#545b57" }, hourText(p.timestamp));
+  }
+  return svg;
+}
+
+for (const { id, label } of sites) {
+  const box = document.querySelector("#" + id + "-graph");
+  const points = snapshot.sites[id].history;
+  const scroller = box.querySelector(".graph-scroll");
+  const hasPoints = points.length > 0;
+  box.querySelector(".loading-graph").hidden = true;
+  box.querySelector(".graph-empty").hidden = hasPoints;
+  box.querySelector(".graph-caption").hidden = !hasPoints;
+  scroller.hidden = !hasPoints;
+  scroller.replaceChildren(...(hasPoints ? [graphSvg(label, points)] : []));
+}

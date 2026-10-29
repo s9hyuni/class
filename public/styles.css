@@ -144,3 +144,6 @@ main { padding-top: 24px; padding-bottom: 48px; min-height: 65vh; scroll-margin-
   button:not(:disabled):not([aria-disabled="true"]):active { transform: none; }
   .refresh-btn, .alerts-link { transition: none; }
 }
+
+/* 2-4 시간별 그래프 */
+.graph-scroll svg { display: block; max-width: none; height: 190px; }
