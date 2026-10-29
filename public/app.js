@@ -97,12 +97,26 @@ function setBadge(node, value) {
   node.textContent = statusNames[value] || "확인 필요";
 }
 
+// "지금"은 자료의 viewTime입니다. 마지막 기록이 몇 분 전인지와 30분을 넘었는지를 봅니다.
+const now = Date.parse(snapshot.viewTime);
+function ageText(value, current) {
+  if (!time(value) || Date.parse(value) > current) return "시각 확인 필요";
+  return Math.floor((current - Date.parse(value)) / 60000) + "분 전";
+}
+function siteStatus(site, current) {
+  if (!time(site.lastEventAt) || Date.parse(site.lastEventAt) > current) return "waiting";
+  if (current - Date.parse(site.lastEventAt) > 30 * 60000) return "warning";
+  return site.status;
+}
+
 for (const { id } of sites) {
   const site = snapshot.sites[id];
   const card = document.querySelector("#" + id + "-status");
-  card.className = "card status-card" + (site.status === "error" ? " danger" : "");
-  setBadge(card.querySelector(".badge"), site.status);
+  const status = siteStatus(site, now);
+  card.className = "card status-card" + (status === "error" ? " danger" : "");
+  setBadge(card.querySelector(".badge"), status);
   card.querySelector(".card-description").textContent = site.note;
+  card.querySelector(".meta").textContent = "기준 시각 대비: " + ageText(site.lastEventAt, now) + " · 발생 시각: " + dateText(site.lastEventAt);
 }
 
 const alerts = snapshot.services.alerts;
@@ -111,3 +125,4 @@ alertsCard.className = "card status-card" + (alerts.status === "failed" ? " dang
 setBadge(alertsCard.querySelector(".badge"), alerts.status);
 alertsCard.querySelector(".card-description").textContent = alerts.status === "sent" ? "알림 전송이 완료됐습니다." :
   alerts.status === "failed" ? "담당자에게 알림을 전달하지 못했습니다." : "전송 기록을 확인할 수 없습니다.";
+alertsCard.querySelector(".meta").textContent = "마지막 전송 시도: " + dateText(alerts.lastAttemptAt);
