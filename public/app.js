@@ -385,8 +385,9 @@ async function readSnapshot() {
   return normalizeSnapshot(await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot")));
 }
 
+// 조회 상태는 마지막 성공 자료(lastData), 마지막 성공 시각(lastSuccessAt), 지금 오류 문구(errorText) 셋으로 나눠 둡니다.
+// 실패해도 lastData를 지우지 않아 이전 값이 화면에 남습니다.
 let lastData = null;
-// 마지막으로 조회에 성공한 시각, 지금 오류 문구, 조회 중인지 여부입니다.
 let lastSuccessAt = null;
 let errorText = "";
 let polling = false;
@@ -410,7 +411,8 @@ function render(data = lastData) {
   $("#view-context").textContent = "현재 시각 기준";
   const notice = $("#data-errors");
   notice.hidden = !errorText;
-  notice.textContent = errorText ? "현재 자료를 가져오지 못했습니다. " + errorText : "";
+  notice.textContent = errorText ? "현재 자료를 가져오지 못했습니다. " + errorText +
+    (data ? " 아래 내용은 이전 조회 자료입니다." : " 조회할 자료가 없습니다.") : "";
   const { route, id, isUnknown } = resolveRoute(location.hash);
   const name = id === "factory" ? "생산" : "출고";
   $("#route-notice").hidden = !isUnknown;
@@ -426,8 +428,8 @@ function render(data = lastData) {
   const queries = $("#queries-view");
   keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : [])), sameScreen);
   if (route === "records") renderRecords(data, id, sameScreen);
-  if (!data) {
-    // 응답 전: 화면이 처음 열릴 때와 같은 "조회 중" 글자를 다시 씁니다.
+  if (!data && !errorText) {
+    // 첫 응답 전(조회 중이고 오류도 없음): 화면이 처음 열릴 때와 같은 "조회 중" 글자를 다시 씁니다.
     $("#hero").className = "hero neutral";
     $("#hero-owner").hidden = true;
     $("#hero-title").textContent = "자료 확인 중";
@@ -441,6 +443,8 @@ function render(data = lastData) {
     card.querySelector(".meta").textContent = "전송 시각 조회 중";
     return;
   }
+  // 첫 조회부터 실패해 자료가 없으면 빈 자료로 그립니다. "조회 중"은 남지 않고 값 없음 표시가 됩니다.
+  if (!data) data = normalizeSnapshot({ serverTime: new Date().toISOString(), sites: {}, services: {}, incidents: [] });
   const issues = currentIssues(data);
   renderNotifications(issues);
   renderHero(issues);
