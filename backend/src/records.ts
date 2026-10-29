@@ -44,3 +44,22 @@ export function seedRecords(now: string): OperationRecord[] {
     return records;
   });
 }
+
+const validTime = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
+
+export function validRecord(value: unknown): value is OperationRecord {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(record.id)) return false;
+  if (record.kind !== "production" && record.kind !== "shipment") return false;
+  if (!Number.isSafeInteger(record.quantity) || (record.quantity as number) <= 0) return false;
+  if (!validTime(record.occurredAt)) return false;
+  if (record.receivedAt !== null && !validTime(record.receivedAt)) return false;
+  if (record.processedAt !== null && !validTime(record.processedAt)) return false;
+  if (record.receivedAt !== null && Date.parse(record.occurredAt as string) > Date.parse(record.receivedAt as string)) return false;
+  if (record.processedAt !== null) {
+    if (record.receivedAt === null) return false;
+    if (Date.parse(record.receivedAt as string) > Date.parse(record.processedAt as string)) return false;
+  }
+  return true;
+}
