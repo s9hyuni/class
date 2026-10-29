@@ -52,3 +52,18 @@ window.SAMPLE_SNAPSHOT = {
   "mode": "current",
   "sessionId": "sample"
 };
+
+window.SAMPLE_RECORDS = {
+  "production": [
+    { "id": "sample-p-1", "kind": "production", "quantity": 20, "occurredAt": "2026-10-26T00:20:00.000Z", "receivedAt": "2026-10-26T00:20:02.000Z", "processedAt": "2026-10-26T00:20:05.000Z", "status": "completed" },
+    { "id": "sample-p-2", "kind": "production", "quantity": 30, "occurredAt": "2026-10-26T01:20:00.000Z", "receivedAt": "2026-10-26T01:20:02.000Z", "processedAt": "2026-10-26T01:20:05.000Z", "status": "completed" },
+    { "id": "sample-p-3", "kind": "production", "quantity": 25, "occurredAt": "2026-10-26T02:20:00.000Z", "receivedAt": "2026-10-26T02:20:02.000Z", "processedAt": "2026-10-26T02:20:05.000Z", "status": "completed" },
+    { "id": "sample-p-4", "kind": "production", "quantity": 25, "occurredAt": "2026-10-26T03:55:00.000Z", "receivedAt": "2026-10-26T03:55:02.000Z", "processedAt": "2026-10-26T03:55:05.000Z", "status": "completed" }
+  ],
+  "shipment": [
+    { "id": "sample-s-1", "kind": "shipment", "quantity": 15, "occurredAt": "2026-10-26T00:30:00.000Z", "receivedAt": "2026-10-26T00:30:02.000Z", "processedAt": "2026-10-26T00:30:05.000Z", "status": "completed" },
+    { "id": "sample-s-2", "kind": "shipment", "quantity": 20, "occurredAt": "2026-10-26T01:30:00.000Z", "receivedAt": "2026-10-26T01:30:02.000Z", "processedAt": "2026-10-26T01:30:05.000Z", "status": "completed" },
+    { "id": "sample-s-3", "kind": "shipment", "quantity": 20, "occurredAt": "2026-10-26T02:30:00.000Z", "receivedAt": "2026-10-26T02:30:02.000Z", "processedAt": "2026-10-26T02:30:05.000Z", "status": "completed" },
+    { "id": "sample-s-4", "kind": "shipment", "quantity": 20, "occurredAt": "2026-10-26T03:58:00.000Z", "receivedAt": "2026-10-26T03:58:02.000Z", "processedAt": "2026-10-26T03:58:05.000Z", "status": "completed" }
+  ]
+};

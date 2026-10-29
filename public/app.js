@@ -148,6 +148,40 @@ function resolveRoute(hash) {
   return { route: "today", id: null, isUnknown: true };
 }
 
+// ── 기록 화면 ──
+// 시각 → 한국 시간 날짜 "2026-10-26", 한국 시간 "2026-10-26T13:10:00"(datetime-local 칸의 값 모양).
+const day = (value) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
+const localTime = (value) => time(value) ? new Date(Date.parse(value) + 9 * HOUR).toISOString().slice(0, 19) : "";
+// 칸의 값은 한국 시간으로 읽습니다.
+const fromLocal = (value) => Date.parse(value + "+09:00");
+function table(headers, rows) {
+  const wrap = el("div", "table-scroll"), result = el("table"), head = el("thead"), header = el("tr"), body = el("tbody");
+  for (const text of headers) { const th = el("th", "", text); th.setAttribute("scope", "col"); header.append(th); }
+  head.append(header);
+  for (const row of rows) { const tr = el("tr"); for (const cell of row) tr.append(el("td", "", cell)); body.append(tr); }
+  result.append(head, body);
+  wrap.append(result);
+  wrap.tabIndex = 0;
+  wrap.setAttribute("aria-label", "기록 표. 좌우로 이동할 수 있습니다.");
+  return wrap;
+}
+const recordStatus = (value) => value === "completed" ? "완료" : value === "receipt-wait" ? "접수 대기" : "처리 대기";
+// "시간대 조회"로 고른 시작·종료 값입니다. 고르기 전에는 기본값(기준 시각 날짜의 00:00:00, 기준 시각)을 씁니다.
+let recordFrom = "", recordTo = "";
+function renderRecords(data, id) {
+  const view = data.viewTime;
+  const from = $("#record-from"), to = $("#record-to");
+  from.min = to.min = day(view) + "T00:00:00";
+  from.max = to.max = localTime(view);
+  from.value = recordFrom || day(view) + "T00:00:00";
+  to.value = recordTo || localTime(view);
+  const start = fromLocal(from.value), end = fromLocal(to.value);
+  const records = window.SAMPLE_RECORDS[id === "factory" ? "production" : "shipment"]
+    .filter(r => Date.parse(r.occurredAt) >= start && Date.parse(r.occurredAt) <= end);
+  const rows = records.map(r => [dateText(r.occurredAt), r.quantity + "개", r.receivedAt ? dateText(r.receivedAt) : "접수 대기", r.processedAt ? dateText(r.processedAt) : "처리 대기", recordStatus(r.status)]);
+  $("#records-result").replaceChildren(rows.length ? table(["발생 시각", "수량", "서버 접수", "서버 처리", "상태"], rows) : el("p", "notice", "선택한 시간대에 기록이 없습니다."));
+}
+
 let lastData = window.SAMPLE_SNAPSHOT;
 
 // 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
@@ -163,6 +197,7 @@ function render(data = lastData) {
   $("#page-description").textContent = route === "records" ? "선택한 기준 시각까지의 기록입니다. 수량은 수정하지 않습니다." :
     route === "queries" ? "이 브라우저 탭의 최근 200건입니다. 실제 요청 시각과 조회 대상 시각을 구분합니다." : "생산·출고 실적과 운영 상태를 살펴봅니다.";
   $("#queries-view").replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : []));
+  if (route === "records") renderRecords(data, id);
 
   const now = Date.parse(data.viewTime);
   renderSite("factory", data.sites.factory, now);
@@ -177,6 +212,12 @@ function render(data = lastData) {
   card.querySelector(".meta").textContent = "마지막 전송 시도: " + dateText(alerts.lastAttemptAt);
 }
 
+$("#record-filter").addEventListener("submit", (event) => {
+  event.preventDefault();
+  recordFrom = $("#record-from").value;
+  recordTo = $("#record-to").value;
+  render();
+});
 window.addEventListener("hashchange", () => {
   render();
   window.scrollTo(0, 0);
