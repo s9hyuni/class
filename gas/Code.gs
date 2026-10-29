@@ -155,6 +155,12 @@ function doGet(e) {
       var data = readData_(at);
       return json_(TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), at, data.now, at ? [] : data.errors));
     }
+    if (path === "api/v1/records") {
+      var kind = params.kind;
+      if (kind !== "production" && kind !== "shipment") throw Error("생산 또는 출고 기록을 선택해 주세요.");
+      var picked = readData_(at, [kind]);
+      return json_({ sessionId: picked.meta.sessionId, viewTime: picked.at, records: TumbleCore.recordsAt(picked.records, kind, picked.at, params.from, params.to) });
+    }
     throw Error("웹 앱 주소 뒤에 ?path=/api/v1/snapshot 또는 ?path=/api/v1/records를 붙여 주세요.");
   } catch (error) {
     // 웹 앱은 상태 코드를 정할 수 없어 오류도 200으로 { error }를 보냅니다.
