@@ -360,7 +360,12 @@ let lastData = null;
 let lastSuccessAt = null;
 let errorText = "";
 let polling = false;
+// 다음 조회 예약입니다. 예약 시각(nextPollAt)과 타이머를 함께 지웁니다.
+const POLL_INTERVAL_MS = 10000;
+let nextPollAt = null;
+let pollTimer = null;
 const refreshBtn = $("#refresh-btn");
+const countdownText = $("#countdown-text");
 // 지난 render의 주소(# 부분)입니다. 같으면 "같은 화면", 다르면 "주소가 바뀐 뒤 처음 그림"으로 봅니다.
 let renderedHash = null;
 
@@ -473,6 +478,7 @@ window.addEventListener("hashchange", () => {
 // 조회는 이 함수 하나로 합니다. 조회 중이면 아무것도 하지 않아 요청이 겹치지 않습니다.
 async function poll() {
   if (polling) return;
+  clearSchedule();
   polling = true;
   updateRefreshButton();
   try {
@@ -485,21 +491,51 @@ async function poll() {
     polling = false;
     updateRefreshButton();
     render();
+    // 다음 조회는 응답이 온 뒤에 예약합니다.
+    scheduleNextPoll();
   }
+}
+function clearSchedule() {
+  clearTimeout(pollTimer);
+  pollTimer = null;
+  nextPollAt = null;
+}
+// 새로 예약하기 전에 늘 이전 예약을 지워 타이머가 두 개 이상 생기지 않게 합니다.
+function scheduleNextPoll() {
+  clearSchedule();
+  nextPollAt = Date.now() + POLL_INTERVAL_MS;
+  pollTimer = setTimeout(() => { clearSchedule(); poll(); }, POLL_INTERVAL_MS);
+  updateCountdown();
+}
+// 0.25초마다 남은 초만 고칩니다. 숨긴 탭에서 타이머가 늦어 예약 시각이 지났으면 바로 조회합니다.
+function updateCountdown() {
+  if (polling || !nextPollAt) { countdownText.textContent = "조회 중…"; return; }
+  const left = nextPollAt - Date.now();
+  if (left <= 0) { clearSchedule(); poll(); return; }
+  countdownText.textContent = "다음 조회 " + Math.max(1, Math.ceil(left / 1000)) + "초";
 }
 // 조회 중에는 disabled 대신 aria-disabled·aria-busy를 둡니다. 키보드 초점이 버튼에 남습니다.
 function updateRefreshButton() {
+  updateCountdown();
   refreshBtn.setAttribute("aria-disabled", String(polling));
   refreshBtn.setAttribute("aria-busy", String(polling));
   refreshBtn.classList.toggle("loading", polling);
 }
 refreshBtn.addEventListener("click", () => {
   if (polling) return;
+  clearSchedule();
   poll();
 });
 // Enter를 누르고 있으면 응답마다 새 요청이 나가므로, 되풀이되는 Enter만 막습니다.
 refreshBtn.addEventListener("keydown", (event) => {
   if (event.repeat && event.key === "Enter") event.preventDefault();
 });
+// 탭이 다시 보이면, 조회 중이 아니고 예약 시각이 지났을 때 바로 조회합니다.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  if (!polling && nextPollAt && Date.now() >= nextPollAt) { clearSchedule(); poll(); }
+  else updateCountdown();
+});
 render();
 poll();
+setInterval(updateCountdown, 250);
