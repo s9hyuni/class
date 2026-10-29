@@ -178,8 +178,6 @@ function resolveRoute(hash) {
 // 시각 → 한국 시간 날짜 "2026-10-26", 한국 시간 "2026-10-26T13:10:00"(datetime-local 칸의 값 모양).
 const day = (value) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
 const localTime = (value) => time(value) ? new Date(Date.parse(value) + 9 * HOUR).toISOString().slice(0, 19) : "";
-// 칸의 값은 한국 시간으로 읽습니다.
-const fromLocal = (value) => Date.parse(value + "+09:00");
 function table(headers, rows) {
   const wrap = el("div", "table-scroll"), result = el("table"), head = el("thead"), header = el("tr"), body = el("tbody");
   for (const text of headers) { const th = el("th", "", text); th.setAttribute("scope", "col"); header.append(th); }
