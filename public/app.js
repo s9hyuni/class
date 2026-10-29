@@ -356,13 +356,26 @@ async function readSnapshot() {
 }
 
 let lastData = null;
+// 마지막으로 조회에 성공한 시각, 지금 오류 문구, 조회 중인지 여부입니다.
+let lastSuccessAt = null;
+let errorText = "";
+let polling = false;
+const refreshBtn = $("#refresh-btn");
 // 지난 render의 주소(# 부분)입니다. 같으면 "같은 화면", 다르면 "주소가 바뀐 뒤 처음 그림"으로 봅니다.
 let renderedHash = null;
 
 // 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
 function render(data = lastData) {
-  // 받은 자료가 없으면 응답을 기다리는 중입니다.
-  $("#page-content").setAttribute("aria-busy", data ? "false" : "true");
+  // 받은 자료도 오류도 없으면 응답을 기다리는 중입니다.
+  $("#page-content").setAttribute("aria-busy", !data && !errorText ? "true" : "false");
+  const freshnessBadge = $("#freshness");
+  freshnessBadge.textContent = errorText ? "조회 실패" : data ? "조회 정상" : "확인 중";
+  freshnessBadge.className = "connection-status " + (errorText ? "danger" : data ? "good" : "neutral");
+  $("#updated-at").textContent = lastSuccessAt ? "마지막 조회 성공: " + dateText(lastSuccessAt) : "조회 성공 기록이 없습니다.";
+  $("#view-context").textContent = "현재 시각 기준";
+  const notice = $("#data-errors");
+  notice.hidden = !errorText;
+  notice.textContent = errorText ? "현재 자료를 가져오지 못했습니다. " + errorText : "";
   const { route, id, isUnknown } = resolveRoute(location.hash);
   const name = id === "factory" ? "생산" : "출고";
   $("#route-notice").hidden = !isUnknown;
@@ -457,8 +470,36 @@ window.addEventListener("hashchange", () => {
   render();
   window.scrollTo(0, 0);
 });
+// 조회는 이 함수 하나로 합니다. 조회 중이면 아무것도 하지 않아 요청이 겹치지 않습니다.
+async function poll() {
+  if (polling) return;
+  polling = true;
+  updateRefreshButton();
+  try {
+    lastData = await readSnapshot();
+    lastSuccessAt = new Date().toISOString();
+    errorText = "";
+  } catch (error) {
+    errorText = String(error?.message || error);
+  } finally {
+    polling = false;
+    updateRefreshButton();
+    render();
+  }
+}
+// 조회 중에는 disabled 대신 aria-disabled·aria-busy를 둡니다. 키보드 초점이 버튼에 남습니다.
+function updateRefreshButton() {
+  refreshBtn.setAttribute("aria-disabled", String(polling));
+  refreshBtn.setAttribute("aria-busy", String(polling));
+  refreshBtn.classList.toggle("loading", polling);
+}
+refreshBtn.addEventListener("click", () => {
+  if (polling) return;
+  poll();
+});
+// Enter를 누르고 있으면 응답마다 새 요청이 나가므로, 되풀이되는 Enter만 막습니다.
+refreshBtn.addEventListener("keydown", (event) => {
+  if (event.repeat && event.key === "Enter") event.preventDefault();
+});
 render();
-readSnapshot().then((data) => {
-  lastData = data;
-  render();
-}).catch((error) => console.error(error));
+poll();

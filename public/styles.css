@@ -195,3 +195,10 @@ tr:last-child td { border-bottom: 0; }
 @media (max-width: 700px) {
   .data-context { margin-bottom: 24px; }
 }
+
+/* 4-6 새로고침 중 아이콘 */
+.refresh-btn.loading .refresh-icon { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refresh-btn.loading .refresh-icon { animation: none; }
+}
