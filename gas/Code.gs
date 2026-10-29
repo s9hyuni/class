@@ -167,3 +167,55 @@ function doGet(e) {
     return json_({ error: error.message });
   }
 }
+
+// 시트에 쓰는 함수가 동시에 실행되지 않게 스크립트 잠금 안에서 fn을 실행합니다.
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Discord 웹훅으로 알림을 보내고 결과를 알림 기록 탭에 남깁니다. 같은 key는 cooldown_minutes분 안에 다시 보내지 않습니다.
+function sendAlert_(key, message) {
+  var props = properties_();
+  var storageKey = "ALERT_" + meta_().sessionId + "_" + key;
+  var now = Date.now();
+  var last = Number(props.getProperty(storageKey) || 0);
+  if (now - last < settings_().cooldown_minutes * 60000) return;
+  // 웹훅 주소는 스크립트 속성에서만 읽고 코드·시트·로그에 쓰지 않습니다.
+  var url = props.getProperty("DISCORD_WEBHOOK_URL");
+  var status = "failed";
+  var detail = "알림 연결 또는 웹훅 설정을 확인해 주세요.";
+  if (url && /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/.test(url)) {
+    // 현장 사건 제목은 이미 현장 이름으로 시작하므로 이름을 한 번만 붙입니다.
+    var content = message.indexOf("텀블공장: ") === 0 || message.indexOf("물류창고: ") === 0 ? message : "텀블공장: " + message;
+    try {
+      var response = UrlFetchApp.fetch(url + "?wait=true", {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({ content: content, allowed_mentions: { parse: [] } }),
+        muteHttpExceptions: true
+      });
+      var code = response.getResponseCode();
+      status = code >= 200 && code <= 299 ? "sent" : "failed";
+      detail = "HTTP " + code;
+    } catch (error) {
+      status = "failed";
+      detail = "알림 연결 또는 웹훅 설정을 확인해 주세요.";
+    }
+  }
+  spreadsheet_().getSheetByName(TUMBLE_SHEETS.alerts).appendRow(toRow_([new Date(now).toISOString(), key, message, status, detail]));
+  // 실패도 같은 시간 동안 다시 보내지 않습니다.
+  props.setProperty(storageKey, String(now));
+}
+
+// 편집기에서 실행하는 알림 시험입니다. 실행할 때마다 key가 달라 바로 다시 시험할 수 있습니다.
+function testDiscordAlert() {
+  withLock_(function () {
+    sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.");
+  });
+}
