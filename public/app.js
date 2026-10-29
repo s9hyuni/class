@@ -188,7 +188,8 @@ let recordFrom = "", recordTo = "";
 // 지난번에 그린 기록 표 내용입니다. 같으면 다시 만들지 않아 같은 표 요소가 그대로 남습니다.
 let recordsView = "";
 function renderRecords(data, id, sameScreen) {
-  const view = data.viewTime;
+  // 첫 응답 전이면 브라우저 시계의 지금 시각으로 기본값과 min·max를 정합니다.
+  const view = data?.viewTime || new Date().toISOString();
   const from = $("#record-from"), to = $("#record-to");
   from.min = to.min = day(view) + "T00:00:00";
   from.max = to.max = localTime(view);
@@ -296,7 +297,33 @@ function setupHelp(btn) {
   });
 }
 
-let lastData = window.SAMPLE_SNAPSHOT;
+// ── 강사 API 연결 ──
+const config = window.DASHBOARD_CONFIG || {};
+// 요청 주소를 만듭니다. GAS 웹 앱(…/exec)은 경로를 ?path=로 받고, 그 밖의 서버는 주소 뒤에 경로를 붙입니다.
+function apiUrl(base, path, params = "") {
+  const address = base.replace(/\/$/, ""), query = String(params);
+  if (address.endsWith("/exec")) return address + "?path=" + path + (query ? "&" + query : "");
+  return address + path + (query ? "?" + query : "");
+}
+// GET으로 JSON을 받습니다. config.timeoutMs가 지나면 요청을 멈추고 오류를 던집니다.
+async function requestJson(url) {
+  const limit = typeof config.timeoutMs === "number" ? config.timeoutMs : 5000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), limit);
+  try {
+    const response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" }, signal: controller.signal });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function readSnapshot() {
+  if (typeof config.apiBaseUrl !== "string" || !/^https?:\/\//.test(config.apiBaseUrl)) throw new Error("API 연결 주소가 설정되지 않았습니다.");
+  return requestJson(apiUrl(config.apiBaseUrl, "/api/v1/snapshot"));
+}
+
+let lastData = null;
 // 지난 render의 주소(# 부분)입니다. 같으면 "같은 화면", 다르면 "주소가 바뀐 뒤 처음 그림"으로 봅니다.
 let renderedHash = null;
 
@@ -317,6 +344,7 @@ function render(data = lastData) {
   const queries = $("#queries-view");
   keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : [])), sameScreen);
   if (route === "records") renderRecords(data, id, sameScreen);
+  if (!data) return;
   const issues = currentIssues(data);
   renderNotifications(issues);
   renderHero(issues);
@@ -382,3 +410,7 @@ window.addEventListener("hashchange", () => {
   window.scrollTo(0, 0);
 });
 render();
+readSnapshot().then((data) => {
+  lastData = data;
+  render();
+}).catch((error) => console.error(error));
