@@ -1,4 +1,6 @@
-import { Controller, Get, Header, Query } from "@nestjs/common";
+import { Controller, Get, Header, NotFoundException, Param, Query, StreamableFile } from "@nestjs/common";
+import { createReadStream } from "node:fs";
+import { resolve } from "node:path";
 import { StateService } from "./state.service";
 
 @Controller()
@@ -9,6 +11,15 @@ export class AppController {
   @Header("Cache-Control", "no-store")
   health() {
     return { status: "ok", releaseId: process.env.RELEASE_ID || "local" };
+  }
+
+  @Get("api/v1/images/:id")
+  @Header("Content-Type", "image/png")
+  image(@Param("id") id: string) {
+    if (id !== "factory" && id !== "warehouse") {
+      throw new NotFoundException();
+    }
+    return new StreamableFile(createReadStream(resolve(__dirname, "../assets", id + ".png")));
   }
 
   @Get("api/v1/snapshot")
