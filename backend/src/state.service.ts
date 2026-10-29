@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { businessDate, validRecord } from "./records";
+import { aggregate, businessDate, validRecord } from "./records";
 import { isScenarioId, makeSnapshot, ScenarioId, Snapshot } from "./scenarios";
 import { newSession, Session, Transition } from "./timeline";
 
@@ -118,6 +118,50 @@ export class StateService {
       lastRunAt: event?.startedAt || null,
       note,
     };
+    for (const [id, kind] of [["factory", "production"], ["warehouse", "shipment"]] as const) {
+      const site = snapshot.sites[id];
+      const rows = this.query(kind, view).records;
+      const total = aggregate(this.state.records, kind, view.value);
+      const latest = rows[rows.length - 1];
+      site.completed = total.quantity || null;
+      site.lastEventAt = latest?.occurredAt || null;
+      site.receivedAt = latest?.receivedAt || null;
+      site.processedAt = latest?.processedAt || null;
+      site.processingState = latest?.processedAt ? "completed" : "waiting";
+      site.note = "기록이 반영되고 있습니다.";
+      const hourly = new Map<string, number>();
+      for (const r of rows) {
+        if (!r.processedAt) continue;
+        const hour = new Date(Math.floor(Date.parse(r.occurredAt) / 3600000) * 3600000).toISOString();
+        hourly.set(hour, (hourly.get(hour) || 0) + r.quantity);
+      }
+      site.history = [...hourly]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([timestamp, quantity]) => ({ timestamp, quantity }));
+      const origin = process.env.PUBLIC_BASE_URL || "http://127.0.0.1:" + (process.env.PORT || "3000");
+      site.image = {
+        url: origin.replace(/\/$/, "") + "/api/v1/images/" + id,
+        alt: id === "factory" ? "생산 라인 참고 사진" : "물류창고 참고 사진",
+      };
+      const stale = site.lastEventAt && Date.parse(view.value) - Date.parse(site.lastEventAt) > 1800000;
+      site.status = !latest || stale || site.processingState !== "completed" ? "warning" : "normal";
+      if (site.status === "warning") {
+        const title = !latest
+          ? site.label + "의 기록이 없습니다."
+          : site.processingState === "waiting"
+            ? site.label + " 기록 처리를 기다리고 있습니다."
+            : site.label + " 기록이 30분 넘게 들어오지 않았습니다.";
+        site.note = title;
+        snapshot.incidents.push({
+          id: id === "factory" ? "FACTORY-FEED" : "WAREHOUSE-FEED",
+          scope: id,
+          level: "warning",
+          title,
+          owner: id === "factory" ? "공장 데이터 담당자" : "창고 데이터 담당자",
+          action: "기록 수집과 처리 상태를 확인해 주세요.",
+        });
+      }
+    }
     return snapshot;
   }
 

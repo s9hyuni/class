@@ -63,3 +63,16 @@ export function validRecord(value: unknown): value is OperationRecord {
   }
   return true;
 }
+
+export function aggregate(records: OperationRecord[], kind: RecordKind, now: string) {
+  const quantity = records
+    .filter(
+      (record) =>
+        record.kind === kind &&
+        businessDate(record.occurredAt) === businessDate(now) &&
+        record.processedAt &&
+        Date.parse(record.processedAt) <= Date.parse(now),
+    )
+    .reduce((sum, record) => sum + record.quantity, 0);
+  return { quantity };
+}
