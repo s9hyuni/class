@@ -80,3 +80,84 @@ function meta_() {
   if (!text) throw Error("초기 자료가 없습니다.");
   return JSON.parse(text);
 }
+
+// 웹 앱 응답: 값을 JSON 글자로 그대로 보냅니다(봉투로 감싸지 않습니다).
+function json_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// 기록 탭과 설정 이력을 읽어 기준 시각의 기록·입력 오류·설정·메타를 돌려줍니다.
+function readData_(at, kinds) {
+  var now = new Date().toISOString();
+  var cutoff = TumbleCore.view(at, now);
+  var meta = meta_();
+  var records = [];
+  var errors = [];
+  (kinds || ["production", "shipment"]).forEach(function (kind) {
+    var name = TUMBLE_SHEETS[kind];
+    var rows = rows_(name);
+    var notes = spreadsheet_().getSheetByName(name).getDataRange().getNotes().slice(1);
+    var chosen = rows.map(function (row, index) {
+      // 앞 여섯 칸(A~F열)만 기록으로 씁니다. G열 이후는 읽지도 비교하지도 않습니다.
+      var cells = row.slice(0, 6);
+      var note = notes[index] ? notes[index][0] : "";
+      if (!note) {
+        // 메모가 없으면 아직 접수하지 않은 기록입니다.
+        var fresh = cells.slice();
+        fresh[3] = "";
+        fresh[4] = "";
+        return fresh;
+      }
+      // 메모가 있으면 접수한 원본을 쓰고, 시트에서 고친 칸이 있으면 알립니다.
+      var original = JSON.parse(note);
+      var changed = cells.some(function (cell, i) { return String(cell) !== String(original[i]); });
+      if (changed) {
+        errors.push({ sheet: name, row: index + 2, message: "접수한 기록의 수정은 반영하지 않습니다. 새 실습 시트를 만들어 주세요." });
+      }
+      return original;
+    });
+    var parsed = TumbleCore.parse(chosen, kind, now);
+    records = records.concat(parsed.records);
+    parsed.errors.forEach(function (error) {
+      errors.push({ sheet: name, row: error.row, message: error.message });
+    });
+  });
+  var history = JSON.parse(spreadsheet_().getSheetByName(TUMBLE_SHEETS.settings).getRange("A1").getNote() || "[]");
+  var entry = null;
+  history.forEach(function (item) {
+    if (Date.parse(item.at) <= Date.parse(cutoff)) entry = item;
+  });
+  if (!entry) throw Error("이 시점의 설정 자료가 없습니다.");
+  return {
+    now: now,
+    at: cutoff,
+    records: records,
+    errors: errors,
+    settings: entry.settings,
+    meta: { sessionId: meta.sessionId, revision: entry.revision, changedAt: entry.at }
+  };
+}
+
+// 알림 기록 탭에서 첫 칸(시각)이 있는 행만 { at, status, message }로 돌려줍니다.
+function alerts_() {
+  return rows_(TUMBLE_SHEETS.alerts)
+    .filter(function (row) { return row[0] !== "" && row[0] !== null && row[0] !== undefined; })
+    .map(function (row) { return { at: TumbleCore.iso(row[0]), status: row[3], message: row[2] }; });
+}
+
+// 웹 앱 진입점입니다. 화면은 경로를 ?path=/api/v1/snapshot처럼 path 매개변수로 넘깁니다.
+function doGet(e) {
+  try {
+    var params = (e && e.parameter) || {};
+    var path = (params.path === undefined || params.path === null ? "" : String(params.path)).replace(/^\/+|\/+$/g, "");
+    var at = params.at;
+    if (path === "api/v1/snapshot") {
+      var data = readData_(at);
+      return json_(TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), at, data.now, at ? [] : data.errors));
+    }
+    throw Error("웹 앱 주소 뒤에 ?path=/api/v1/snapshot 또는 ?path=/api/v1/records를 붙여 주세요.");
+  } catch (error) {
+    // 웹 앱은 상태 코드를 정할 수 없어 오류도 200으로 { error }를 보냅니다.
+    return json_({ error: error.message });
+  }
+}
