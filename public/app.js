@@ -207,26 +207,35 @@ function keepScroll(box, draw, sameScreen) {
     if (focused) next.focus({ preventScroll: true });
   }
 }
-// "시간대 조회"로 고른 시작·종료 값입니다. 고르기 전에는 기본값(기준 시각 날짜의 00:00:00, 기준 시각)을 씁니다.
-let recordFrom = "", recordTo = "";
+// 받은 기록과 기록 오류, "시간대 조회"로 기억한 시작·종료 값(recordFrom·recordTo), 수강생이 칸에 고친 값(draftFrom·draftTo)입니다.
+// 기록 요청에는 기억한 값만 쓰고, 고치기만 한 값은 칸에만 남깁니다.
+let recordsData = null, recordsError = "";
+let recordFrom = "", recordTo = "", draftFrom = "", draftTo = "";
+// 기록 요청 번호와 진행 중 표시입니다. 번호가 바뀐 뒤 도착한 응답은 버립니다.
+let recordsLoading = false, recordsRequestId = 0;
 // 지난번에 그린 기록 표 내용입니다. 같으면 다시 만들지 않아 같은 표 요소가 그대로 남습니다.
 let recordsView = "";
 function renderRecords(data, id, sameScreen) {
   // 첫 응답 전이면 브라우저 시계의 지금 시각으로 기본값과 min·max를 정합니다.
   const view = data?.viewTime || new Date().toISOString();
-  const from = $("#record-from"), to = $("#record-to");
-  from.min = to.min = day(view) + "T00:00:00";
-  from.max = to.max = localTime(view);
-  from.value = recordFrom || day(view) + "T00:00:00";
-  to.value = recordTo || localTime(view);
-  const start = fromLocal(from.value), end = fromLocal(to.value);
-  const records = window.SAMPLE_RECORDS[id === "factory" ? "production" : "shipment"]
-    .filter(r => Date.parse(r.occurredAt) >= start && Date.parse(r.occurredAt) <= end);
-  const rows = records.map(r => [dateText(r.occurredAt), r.quantity + "개", r.receivedAt ? dateText(r.receivedAt) : "접수 대기", r.processedAt ? dateText(r.processedAt) : "처리 대기", recordStatus(r.status)]);
-  const result = $("#records-result"), key = JSON.stringify(rows);
+  // 칸의 값은 고친 값, 없으면 기억한 값, 그것도 없으면 기본값입니다. 초점이 있는 칸은 덮어쓰지 않습니다.
+  for (const [input, value] of [[$("#record-from"), draftFrom || recordFrom || day(view) + "T00:00:00"], [$("#record-to"), draftTo || recordTo || localTime(view)]]) {
+    input.min = day(view) + "T00:00:00";
+    input.max = localTime(view);
+    if (document.activeElement !== input) input.value = value;
+  }
+  const rows = recordsData?.records?.map(r => [dateText(r.occurredAt), r.quantity + "개", r.receivedAt ? dateText(r.receivedAt) : "접수 대기", r.processedAt ? dateText(r.processedAt) : "처리 대기", recordStatus(r.status)]);
+  // snapshot 조회가 실패해 기록 요청을 보내지 못했으면 그렇다고 알립니다.
+  const missed = errorText && !recordsLoading;
+  const waiting = missed ? "현재 자료를 받지 못해 기록을 불러오지 못했습니다. 다시 조회하면 불러옵니다." : "기록을 확인하고 있습니다.";
+  const result = $("#records-result"), key = JSON.stringify([recordsError, rows ?? waiting]);
   if (recordsView === key) return;
   recordsView = key;
-  keepScroll(result, () => result.replaceChildren(rows.length ? table(["발생 시각", "수량", "서버 접수", "서버 처리", "상태"], rows) : el("p", "notice", "선택한 시간대에 기록이 없습니다.")), sameScreen);
+  keepScroll(result, () => result.replaceChildren(
+    recordsError ? el("p", "notice warning", recordsError) :
+    !rows ? el("p", missed ? "notice warning" : "notice", waiting) :
+    rows.length ? table(["발생 시각", "수량", "서버 접수", "서버 처리", "상태"], rows) :
+    el("p", "notice", "선택한 시간대에 기록이 없습니다.")), sameScreen);
 }
 
 // ── 알림 목록과 먼저 확인할 일 ──
@@ -449,11 +458,18 @@ function render(data = lastData) {
   card.querySelector(".meta").textContent = "마지막 전송 시도: " + dateText(alerts.lastAttemptAt);
 }
 
+for (const [key, input] of [["from", $("#record-from")], ["to", $("#record-to")]]) {
+  input.addEventListener("input", () => { if (key === "from") draftFrom = input.value; else draftTo = input.value; });
+}
+// "시간대 조회"는 표를 직접 그리지 않고 poll()에 맡깁니다. 조회 중이면 새 시간대만 기억해 두었다가 그 조회가 끝난 뒤 받습니다.
 $("#record-filter").addEventListener("submit", (event) => {
   event.preventDefault();
   recordFrom = $("#record-from").value;
   recordTo = $("#record-to").value;
-  render();
+  recordsRequestId++;
+  recordsLoading = false;
+  recordsData = null;
+  poll();
 });
 // 아래 이벤트는 페이지를 열 때 한 번만 붙입니다. render 때마다 다시 붙이지 않습니다.
 for (const scroller of document.querySelectorAll(".graph-scroll")) {
@@ -492,9 +508,14 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("resize", () => {
   for (const pop of openHelps()) positionHelpPopover(pop);
 });
+// 다른 화면으로 옮기면 기억한 시간대·고친 칸 값·받아 둔 기록을 비웁니다. 기록 화면으로 들어오면 바로 조회합니다.
 window.addEventListener("hashchange", () => {
-  render();
+  recordsRequestId++;
+  recordsLoading = false;
+  recordsData = null; recordsError = ""; recordFrom = ""; recordTo = ""; draftFrom = ""; draftTo = "";
   window.scrollTo(0, 0);
+  render();
+  if (resolveRoute(location.hash).route === "records" && !polling) poll();
 });
 // 조회는 이 함수 하나로 합니다. 조회 중이면 아무것도 하지 않아 요청이 겹치지 않습니다.
 async function poll() {
@@ -506,6 +527,8 @@ async function poll() {
     lastData = await readSnapshot();
     lastSuccessAt = new Date().toISOString();
     errorText = "";
+    // 기록은 따로 받아 snapshot 화면 갱신을 기다리게 하지 않습니다.
+    void loadRecords(lastData.viewTime);
   } catch (error) {
     errorText = String(error?.message || error);
   } finally {
@@ -514,6 +537,28 @@ async function poll() {
     render();
     // 다음 조회는 응답이 온 뒤에 예약합니다.
     scheduleNextPoll();
+  }
+}
+// 기록 화면에 있을 때 /api/v1/records로 기록을 받습니다.
+async function loadRecords(at) {
+  const { route, id } = resolveRoute(location.hash);
+  // 같은 화면의 기록 요청이 아직 진행 중이면 새로 보내지 않고 그 응답을 기다립니다.
+  if (route !== "records" || recordsLoading) return;
+  const requestId = ++recordsRequestId;
+  recordsLoading = true;
+  const params = new URLSearchParams({ kind: id === "factory" ? "production" : "shipment", at });
+  if (recordFrom) params.set("from", new Date(recordFrom + "+09:00").toISOString());
+  if (recordTo) params.set("to", new Date(recordTo + "+09:00").toISOString());
+  try {
+    const data = await requestJson(apiUrl(config.apiBaseUrl, "/api/v1/records", params));
+    if (requestId === recordsRequestId) { recordsData = data; recordsError = ""; }
+  } catch (error) {
+    if (requestId === recordsRequestId) { recordsData = null; recordsError = String(error?.message || error); }
+  } finally {
+    if (requestId === recordsRequestId) {
+      recordsLoading = false;
+      render();
+    }
   }
 }
 function clearSchedule() {
