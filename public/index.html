@@ -58,6 +58,13 @@
             <progress id="factory-progress" class="production-progress" max="100" value="83.3"></progress>
             <p id="factory-exceeded" class="meta" hidden>목표 초과</p>
             <a class="card-link record-button" href="#/records/factory">생산 기록 보기</a>
+            <figure id="factory-photo" class="photo-slot"><img src="./assets/approved/factory.png" alt="생산 라인 참고 사진"><figcaption>공장 생산 참고 사진</figcaption></figure>
+            <div id="factory-graph" class="record-graph">
+              <div class="loading-graph">시간별 기록 조회 중</div>
+              <p class="meta graph-empty" hidden>시간별 기록이 없습니다.</p>
+              <div class="graph-scroll" tabindex="0" role="region" aria-label="텀블공장 시간별 수량 그래프. 좌우 방향키로 이동합니다." hidden></div>
+              <p class="meta graph-caption" hidden>오늘 시간별 완료 수량 · 좌우로 이동해 확인하세요.</p>
+            </div>
           </article>
           <article class="card">
             <p class="card-label"><span>창고 출고</span></p>
@@ -66,6 +73,13 @@
             <progress id="warehouse-progress" class="production-progress" max="100" value="75"></progress>
             <p id="warehouse-exceeded" class="meta" hidden>목표 초과</p>
             <a class="card-link record-button" href="#/records/warehouse">출고 기록 보기</a>
+            <figure id="warehouse-photo" class="photo-slot"><img src="./assets/approved/warehouse.png" alt="물류창고 참고 사진"><figcaption>창고 출고 참고 사진</figcaption></figure>
+            <div id="warehouse-graph" class="record-graph">
+              <div class="loading-graph">시간별 기록 조회 중</div>
+              <p class="meta graph-empty" hidden>시간별 기록이 없습니다.</p>
+              <div class="graph-scroll" tabindex="0" role="region" aria-label="물류창고 시간별 수량 그래프. 좌우 방향키로 이동합니다." hidden></div>
+              <p class="meta graph-caption" hidden>오늘 시간별 완료 수량 · 좌우로 이동해 확인하세요.</p>
+            </div>
           </article>
         </div>
       </div>
