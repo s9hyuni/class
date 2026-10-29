@@ -167,3 +167,13 @@ tr:last-child td { border-bottom: 0; }
 @media (max-width: 700px) {
   .record-filter label, .record-filter input, .record-filter button { width: 100%; }
 }
+
+/* 3-4 알림 목록 */
+.notification-wrap { position: relative; }
+.notification-dropdown { position: absolute; right: 0; top: calc(100% + 12px); width: min(400px, calc(100vw - 40px)); max-height: 65vh; overflow: auto; padding: 24px; border-radius: 12px; background: #fff; box-shadow: 0 8px 32px #22272426; }
+.notification-item { border-top: 1px solid var(--line); padding-block: 16px; }
+.notification-item h3 { font-size: 17px; margin-bottom: 8px; }
+@media (max-width: 700px) {
+  .notification-wrap { position: absolute; top: 16px; right: 16px; }
+  .notification-dropdown { width: min(400px, calc(100vw - 32px)); padding: 16px; }
+}

@@ -182,6 +182,50 @@ function renderRecords(data, id) {
   $("#records-result").replaceChildren(rows.length ? table(["발생 시각", "수량", "서버 접수", "서버 처리", "상태"], rows) : el("p", "notice", "선택한 시간대에 기록이 없습니다."));
 }
 
+// ── 알림 목록과 먼저 확인할 일 ──
+// PREDICTION-JOB은 빼고, 같은 id는 한 번만 넣고, level이 error인 항목을 앞에 둡니다.
+function currentIssues(data) {
+  const issues = new Map((data?.incidents || []).filter(item => item.id !== "PREDICTION-JOB").map(item => [item.id, item]));
+  return [...issues.values()].sort((a, b) => (a.level === "error" ? 0 : 1) - (b.level === "error" ? 0 : 1));
+}
+function toggleNotifications(force) {
+  const panel = $("#notification-dropdown"), button = $("#header-alerts-link");
+  const open = typeof force === "boolean" ? force : panel.hidden;
+  panel.hidden = !open;
+  button.setAttribute("aria-expanded", String(open));
+}
+function renderNotifications(issues) {
+  const panel = $("#notification-dropdown");
+  panel.replaceChildren(el("h2", "", "알림"));
+  if (!issues.length) panel.append(el("p", "", "확인할 알림이 없습니다."));
+  for (const item of issues) {
+    const entry = el("article", "notification-item");
+    entry.append(el("h3", "", item.title), el("p", "", "담당자: " + item.owner), el("p", "", "할 일: " + item.action));
+    panel.append(entry);
+  }
+  const countText = "알림 " + issues.length + "건";
+  $("#header-alerts-text").textContent = countText;
+  const button = $("#header-alerts-link");
+  button.setAttribute("aria-label", countText);
+  button.className = "alerts-link " + (issues.some(item => item.level === "error") ? "danger" : issues.length ? "warning" : "good");
+}
+function renderHero(issues) {
+  const first = issues[0];
+  $("#hero").className = "hero" + (first ? "" : " neutral");
+  $("#hero-owner").hidden = !first;
+  if (!first) {
+    $("#hero-title").textContent = "우선 확인할 문제가 없습니다.";
+    $("#hero-action").textContent = "운영 담당자 · 기록 갱신 상태를 계속 확인해 주세요.";
+    return;
+  }
+  const where = first.scope === "factory" || first.id === "FACTORY-FEED" ? "생산 기록 보기에서 마지막 기록을 확인하세요. " :
+    first.scope === "warehouse" || first.id === "WAREHOUSE-FEED" ? "출고 기록 보기에서 마지막 기록을 확인하세요. " :
+    first.id === "ALERT-DELIVERY" ? "아래 알림 전송 기록에서 마지막 시도와 실패 여부를 확인하세요. " : "";
+  $("#hero-title").textContent = first.title;
+  $("#hero-owner").textContent = "담당자: " + first.owner;
+  $("#hero-action").textContent = "확인할 일: " + where + first.action;
+}
+
 let lastData = window.SAMPLE_SNAPSHOT;
 
 // 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
@@ -198,6 +242,9 @@ function render(data = lastData) {
     route === "queries" ? "이 브라우저 탭의 최근 200건입니다. 실제 요청 시각과 조회 대상 시각을 구분합니다." : "생산·출고 실적과 운영 상태를 살펴봅니다.";
   $("#queries-view").replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : []));
   if (route === "records") renderRecords(data, id);
+  const issues = currentIssues(data);
+  renderNotifications(issues);
+  renderHero(issues);
 
   const now = Date.parse(data.viewTime);
   renderSite("factory", data.sites.factory, now);
@@ -217,6 +264,16 @@ $("#record-filter").addEventListener("submit", (event) => {
   recordFrom = $("#record-from").value;
   recordTo = $("#record-to").value;
   render();
+});
+$("#header-alerts-link").addEventListener("click", () => toggleNotifications());
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".notification-wrap")) toggleNotifications(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("#notification-dropdown").hidden) {
+    toggleNotifications(false);
+    $("#header-alerts-link").focus();
+  }
 });
 window.addEventListener("hashchange", () => {
   render();
