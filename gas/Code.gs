@@ -298,3 +298,44 @@ function addDemoProductionRecord() {
     rememberSettings_();
   });
 }
+
+// 설치형 편집 트리거가 부릅니다. 실습 시트를 고치면 설정은 이력에 남기고, 기록 행은 바로 접수·처리합니다.
+function onEditInstalled(e) {
+  if (!e || !e.range || e.source.getId() !== properties_().getProperty("SPREADSHEET_ID")) return;
+  withLock_(function () {
+    var sheet = e.range.getSheet();
+    var name = sheet.getName();
+    if (name === TUMBLE_SHEETS.settings) {
+      rememberSettings_();
+      return;
+    }
+    if ((name !== TUMBLE_SHEETS.production && name !== TUMBLE_SHEETS.shipment) || e.range.getRow() === 1) return;
+    for (var row = e.range.getRow(); row <= e.range.getLastRow(); row++) {
+      processRow_(sheet, row, true);
+    }
+    rememberSettings_();
+  });
+}
+
+// 시간 트리거가 1분마다 부릅니다. 현장 사건마다 알림을 보냅니다(같은 사건은 cooldown_minutes분 안에 다시 보내지 않습니다).
+function checkRecordDelays() {
+  withLock_(function () {
+    var data = readData_();
+    var snapshot = TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), null, data.now, data.errors);
+    snapshot.incidents.forEach(function (incident) {
+      if (incident.scope !== "service") sendAlert_(incident.id, alertMessage_(incident));
+    });
+  });
+}
+
+// 편집기에서 실행해 두 트리거를 새로 만듭니다. 여러 번 실행해도 두 개만 남습니다.
+function installTrainingTriggers() {
+  var id = properties_().getProperty("SPREADSHEET_ID");
+  if (!id) throw Error("시트를 먼저 생성해 주세요.");
+  ScriptApp.getProjectTriggers().forEach(function (trigger) {
+    var handler = trigger.getHandlerFunction();
+    if (handler === "onEditInstalled" || handler === "checkRecordDelays") ScriptApp.deleteTrigger(trigger);
+  });
+  ScriptApp.newTrigger("onEditInstalled").forSpreadsheet(id).onEdit().create();
+  ScriptApp.newTrigger("checkRecordDelays").timeBased().everyMinutes(1).create();
+}
