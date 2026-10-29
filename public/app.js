@@ -1,14 +1,23 @@
 // 예시 자료(sample-data.js)의 값으로 화면 글자를 채웁니다.
 const snapshot = window.SAMPLE_SNAPSHOT;
+const sites = [
+  { id: "factory", noun: "생산", label: "텀블공장" },
+  { id: "warehouse", noun: "출고", label: "물류창고" }
+];
 
-const factoryCompleted = snapshot.sites.factory.completed;
-const factoryTarget = snapshot.sites.factory.target;
-const factoryQuantity = document.querySelectorAll("#factory-quantity span");
-factoryQuantity[0].textContent = "생산 " + factoryCompleted + "개";
-factoryQuantity[1].textContent = "· 목표 " + factoryTarget + "개";
+for (const { id, noun, label } of sites) {
+  const completed = snapshot.sites[id].completed;
+  const target = snapshot.sites[id].target;
+  const quantity = document.querySelectorAll("#" + id + "-quantity span");
+  quantity[0].textContent = noun + " " + completed.toLocaleString("ko-KR") + "개";
+  quantity[1].textContent = "· 목표 " + target.toLocaleString("ko-KR") + "개";
 
-const warehouseCompleted = snapshot.sites.warehouse.completed;
-const warehouseTarget = snapshot.sites.warehouse.target;
-const warehouseQuantity = document.querySelectorAll("#warehouse-quantity span");
-warehouseQuantity[0].textContent = "출고 " + warehouseCompleted + "개";
-warehouseQuantity[1].textContent = "· 목표 " + warehouseTarget + "개";
+  // 달성률 = 실적 ÷ 목표 × 100. 글자는 소수점 한 자리, 막대는 계산값 그대로(100을 넘지 않게) 씁니다.
+  const rate = completed / target * 100;
+  const rateText = rate.toFixed(1) + "%";
+  document.querySelector("#" + id + "-progress-text").textContent = "계획 대비 " + rateText;
+  const bar = document.querySelector("#" + id + "-progress");
+  bar.value = Math.min(100, rate);
+  bar.setAttribute("aria-label", label + " 목표 달성률 " + rateText);
+  document.querySelector("#" + id + "-exceeded").hidden = !(completed > target);
+}
