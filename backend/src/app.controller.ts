@@ -11,6 +11,12 @@ export class AppController {
     return { status: "ok", releaseId: process.env.RELEASE_ID || "local" };
   }
 
+  @Get("api/v1/snapshot")
+  @Header("Cache-Control", "no-store")
+  snapshot(@Query("at") at?: string) {
+    return this.state.snapshot(at);
+  }
+
   @Get("api/v1/records")
   @Header("Cache-Control", "no-store")
   records(

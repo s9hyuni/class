@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { businessDate, validRecord } from "./records";
-import { isScenarioId, ScenarioId } from "./scenarios";
+import { isScenarioId, makeSnapshot, ScenarioId, Snapshot } from "./scenarios";
 import { newSession, Session, Transition } from "./timeline";
 
 type Stored = Session & { scenarioId: ScenarioId; revision: number; changedAt: string };
@@ -90,6 +90,35 @@ export class StateService {
       throw new BadRequestException("생산 또는 출고 기록을 선택해 주세요.");
     }
     return this.query(kind, this.view(at), from, to);
+  }
+
+  private transition(at: string) {
+    return [...this.state.transitions].reverse().find((event) => Date.parse(event.at) <= Date.parse(at));
+  }
+
+  snapshot(at?: string): Snapshot {
+    const view = this.view(at);
+    const event = this.transition(view.value);
+    const snapshot = makeSnapshot(event?.scenarioId || "normal", event?.revision || this.state.revision, event?.at || view.value, view.now);
+    snapshot.viewTime = view.value;
+    snapshot.mode = at === undefined ? "current" : "past";
+    snapshot.sessionId = this.state.sessionId;
+    const prediction = event?.prediction || "waiting";
+    const note =
+      prediction === "running"
+        ? "출고 예측을 처리하고 있습니다."
+        : prediction === "waiting"
+          ? "예측 실행을 기다리고 있습니다."
+          : "출고 예측 처리가 끝났습니다.";
+    snapshot.services.prediction = {
+      status: prediction,
+      version: "demo-v1",
+      startedAt: event?.startedAt || null,
+      finishedAt: event?.finishedAt || null,
+      lastRunAt: event?.startedAt || null,
+      note,
+    };
+    return snapshot;
   }
 
   private query(kind: string, view: { now: string; value: string }, from?: string, to?: string) {
