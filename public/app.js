@@ -511,6 +511,47 @@ function firstSentence(text) {
   const head = end === -1 ? value : value.slice(0, end + 1);
   return head.length > 60 ? head.slice(0, 60) + "…" : head;
 }
+// 조회 기록 화면에서 고른 막대(requestedAt)입니다. 다시 그려도 그 막대의 글을 그대로 보여 주고, 주소가 바뀌면 지웁니다.
+let queryPick = "";
+function queryStatusHistory(id) {
+  const card = el("section", "card query-history");
+  card.setAttribute("aria-label", "조회 상태 이력");
+  const label = (record) => !record.ok ? "조회 실패" : record.available[id] ? "자료 제공" : "현장 값 누락";
+  const tone = (record) => !record.ok ? "danger" : record.available[id] ? "good" : "warning";
+  const latest = queryLog[queryLog.length - 1];
+  const top = el("div", "status-line");
+  top.append(el("h2", "", id === "factory" ? "생산 데이터 조회" : "출고 데이터 조회"),
+    el("span", "history-status " + (latest ? tone(latest) : "neutral"), latest ? label(latest) : "조회 기록 없음"));
+  card.append(top);
+  if (!latest) { card.append(el("p", "notice", "아직 조회 기록이 없습니다.")); return card; }
+  const strip = el("div", "history-strip");
+  strip.setAttribute("aria-label", "조회별 상태. 오래된 기록부터 최신 기록 순서입니다.");
+  const detail = el("p", "meta history-detail", "막대 하나가 조회 한 번입니다. 막대를 선택하면 시각과 결과를 확인할 수 있습니다.");
+  detail.setAttribute("role", "status");
+  for (const record of queryLog) {
+    const text = dateText(record.requestedAt) + " · " + label(record) + " · " + record.durationMs + "ms · 기준 시각: " + (record.at ? dateText(record.at) : "현재");
+    const bar = el("button", "history-bar " + tone(record));
+    bar.type = "button";
+    bar.title = text;
+    bar.setAttribute("aria-label", text);
+    bar.dataset.at = record.requestedAt;
+    const pick = () => { queryPick = record.requestedAt; detail.textContent = text; };
+    bar.addEventListener("click", pick);
+    bar.addEventListener("focus", pick);
+    if (record.requestedAt === queryPick) detail.textContent = text;
+    strip.append(bar);
+  }
+  const range = el("div", "history-range");
+  const percent = (queryLog.filter(r => r.ok).length / queryLog.length * 100).toFixed(1);
+  range.append(el("span", "", dateText(queryLog[0].requestedAt)), el("strong", "", "조회 성공률 " + percent + "% · " + queryLog.length + "건"), el("span", "", dateText(latest.requestedAt)));
+  card.append(strip, range, el("p", "meta", "초록: 자료 제공 · 노랑: 조회 성공, 현장 값 누락 · 빨강: 조회 실패. 기록이 없는 기간의 가동률은 계산하지 않습니다."), detail);
+  return card;
+}
+function queriesContent(id) {
+  const rows = [...queryLog].reverse().map(r => [dateText(r.requestedAt), r.at ? dateText(r.at) : "현재", r.ok ? "성공" : "실패", r.durationMs + "ms",
+    !r.ok ? "확인 불가" : r.available[id] ? "제공" : "누락", r.error || "—"]);
+  return [queryStatusHistory(id), rows.length ? table(["요청 시각", "기준 시각", "조회 결과", "응답시간", "현장 값", "실패 이유"], rows) : el("p", "notice", "조회 기록이 없습니다.")];
+}
 const sitesAvailable = (data) => ({
   factory: integer(data.sites.factory.completed) && integer(data.sites.factory.target),
   warehouse: integer(data.sites.warehouse.completed) && integer(data.sites.warehouse.target)
@@ -543,8 +584,11 @@ function render(data = lastData) {
     route === "queries" ? "이 브라우저 탭의 최근 200건입니다. 실제 요청 시각과 조회 대상 시각을 구분합니다." : "생산·출고 실적과 운영 상태를 살펴봅니다.";
   const sameScreen = location.hash === renderedHash;
   renderedHash = location.hash;
+  // 조회 기록 화면은 render 때마다 다시 그립니다. 같은 화면이면 초점이 있던 막대(같은 data-at)에 초점을 되돌립니다.
   const queries = $("#queries-view");
-  keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : [])), sameScreen);
+  const focusedAt = sameScreen && queries.contains(document.activeElement) ? document.activeElement.dataset?.at : undefined;
+  keepScroll(queries, () => queries.replaceChildren(...(route === "queries" ? queriesContent(id) : [])), sameScreen);
+  if (focusedAt) [...queries.querySelectorAll(".history-bar")].find(bar => bar.dataset.at === focusedAt)?.focus({ preventScroll: true });
   if (route === "records") renderRecords(data, id, sameScreen);
   // 사건과 조회 실패를 합친 목록 하나로 알림 버튼·목록과 먼저 확인할 일을 함께 채웁니다.
   const issues = currentIssues(data, errorText);
@@ -647,6 +691,7 @@ window.addEventListener("hashchange", () => {
   recordsRequestId++;
   recordsLoading = false;
   recordsData = null; recordsError = ""; recordFrom = ""; recordTo = ""; draftFrom = ""; draftTo = "";
+  queryPick = "";
   window.scrollTo(0, 0);
   render();
   if (resolveRoute(location.hash).route === "records" && !polling) poll();
