@@ -219,3 +219,82 @@ function testDiscordAlert() {
     sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.");
   });
 }
+
+// 지금 설정을 설정 이력(설정 탭 A1 메모)에 더하고 메타의 revision을 올립니다.
+// 속성 하나에 넣을 수 있는 크기에 한도가 있어 이력은 메모에 둡니다.
+function rememberSettings_() {
+  var meta = meta_();
+  var now = new Date().toISOString();
+  meta.revision += 1;
+  meta.changedAt = now;
+  var cell = spreadsheet_().getSheetByName(TUMBLE_SHEETS.settings).getRange("A1");
+  var history = JSON.parse(cell.getNote() || "[]");
+  history.push({ at: now, settings: settings_(), revision: meta.revision });
+  cell.setNote(JSON.stringify(history));
+  properties_().setProperty("TUMBLE_META", JSON.stringify(meta));
+}
+
+// 기록 탭의 row행 하나를 접수·처리합니다. A칸 메모가 접수한 원본입니다.
+function processRow_(sheet, row, notify) {
+  var range = sheet.getRange(row, 1, 1, 6);
+  var values = range.getValues()[0].map(fromCell_);
+  var noteCell = sheet.getRange(row, 1);
+  var note = noteCell.getNote();
+  if (note) {
+    var original = JSON.parse(note);
+    // 처리를 마친 기록은 시트에서 고칠 수 없어 원본으로 되돌립니다.
+    if (original[4]) {
+      range.setValues([toRow_(original)]);
+      return;
+    }
+    // 접수한 뒤에도 기록 ID·수량·발생 시각은 원본 값으로 고정합니다.
+    values = original;
+  } else {
+    values[3] = "";
+    values[4] = "";
+  }
+  var kind = sheet.getName() === TUMBLE_SHEETS.production ? "production" : "shipment";
+  var now = new Date().toISOString();
+  var id = String(values[0]);
+  var duplicate = rows_(sheet.getName()).some(function (other, index) {
+    return index + 2 !== row && String(other[0]) !== "" && String(other[0]) === id;
+  });
+  var parsed = TumbleCore.parse([values], kind, now);
+  if (duplicate || parsed.errors.length) {
+    sheet.getRange(row, 6).setValue("입력 확인 필요");
+    if (notify) {
+      sendAlert_("input-" + kind + "-" + row, duplicate ? "같은 기록 ID가 있습니다." : parsed.errors[0].message);
+    }
+    return;
+  }
+  if (!parsed.records.length) return;
+  if (!values[3]) values[3] = now;
+  var paused = settings_()[kind === "production" ? "factory_paused" : "warehouse_paused"];
+  values[4] = paused ? "" : now;
+  values[5] = paused ? "처리 대기" : "완료";
+  range.setValues([toRow_(values)]);
+  noteCell.setNote(JSON.stringify(values));
+}
+
+// 편집기에서 실행해 두 기록 탭의 모든 행을 접수·처리합니다.
+function processPendingRecords() {
+  withLock_(function () {
+    [TUMBLE_SHEETS.production, TUMBLE_SHEETS.shipment].forEach(function (name) {
+      var sheet = spreadsheet_().getSheetByName(name);
+      for (var row = 2; row <= sheet.getLastRow(); row++) {
+        processRow_(sheet, row, true);
+      }
+    });
+    rememberSettings_();
+  });
+}
+
+// 편집기에서 실행해 생산 기록 한 행(수량 10)을 더하고 바로 처리합니다.
+function addDemoProductionRecord() {
+  withLock_(function () {
+    var sheet = spreadsheet_().getSheetByName(TUMBLE_SHEETS.production);
+    sheet.appendRow(toRow_(["P-" + Utilities.getUuid(), 10, new Date().toISOString(), "", "", "대기"]));
+    processRow_(sheet, sheet.getLastRow(), true);
+    rememberSettings_();
+  });
+}
