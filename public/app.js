@@ -94,6 +94,26 @@ function renderGraph(box, label, points, loading) {
   scroller.scrollLeft = left;
 }
 
+// ── 현장 사진 ──
+// image.url은 고치지 않고 그대로 씁니다. 상대 주소는 이 화면 주소를 기준으로 열립니다.
+// 사진 주소와 alt가 지난번과 같으면 다시 만들지 않아 조회할 때마다 깜박이지 않습니다.
+function renderPhoto(slot, caption, site) {
+  const image = site.image, key = site.loading ? "loading" : image ? image.url + "\n" + image.alt : "none";
+  if (slot.dataset.photo === key) return;
+  slot.dataset.photo = key;
+  if (site.loading) { slot.replaceChildren(el("div", "photo-placeholder", "현장 사진 확인 중")); return; }
+  if (!image) { slot.replaceChildren(el("div", "photo-placeholder", "현장 사진 없음"), el("figcaption", "", caption)); return; }
+  const img = el("img");
+  img.src = image.url;
+  img.alt = image.alt.trim() || caption;
+  img.loading = "lazy";
+  img.onerror = () => {
+    img.remove();
+    slot.prepend(el("div", "photo-placeholder", "현장 사진을 불러오지 못했습니다."));
+  };
+  slot.replaceChildren(img, el("figcaption", "", caption));
+}
+
 // ── 기록 처리 상태 카드 안쪽 ──
 function timelineContent(label, site, now) {
   if (site.loading) return [el("h3", "", label), el("p", "meta", "기록 처리 정보 조회 중")];
@@ -132,6 +152,7 @@ function renderSite(id, site, now) {
     bar.setAttribute("aria-label", label + " 목표 달성률 " + progressText(site.completed, site.target));
   }
   $("#" + id + "-exceeded").hidden = !(valid && site.completed > site.target);
+  renderPhoto($("#" + id + "-photo"), id === "factory" ? "공장 생산 참고 사진" : "창고 출고 참고 사진", site);
   renderGraph($("#" + id + "-graph"), label, site.history, site.loading);
 
   const age = freshness(site.lastEventAt, now);
