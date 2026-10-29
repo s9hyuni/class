@@ -139,8 +139,31 @@ function renderSite(id, site, now) {
   $("#" + id + "-flow").replaceChildren(...timelineContent(label, site, now));
 }
 
-// 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다.
-function render(data) {
+// 주소 끝의 # 부분 → 어느 화면인지. 다섯 주소 밖은 오늘 운영과 안내(isUnknown)입니다.
+function resolveRoute(hash) {
+  const raw = (hash || "").replace(/^#\/?/, "");
+  if (!raw || raw === "today") return { route: "today", id: null, isUnknown: false };
+  const detail = /^(records|queries)\/(factory|warehouse)$/.exec(raw);
+  if (detail) return { route: detail[1], id: detail[2], isUnknown: false };
+  return { route: "today", id: null, isUnknown: true };
+}
+
+let lastData = window.SAMPLE_SNAPSHOT;
+
+// 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
+function render(data = lastData) {
+  const { route, id, isUnknown } = resolveRoute(location.hash);
+  const name = id === "factory" ? "생산" : "출고";
+  $("#route-notice").hidden = !isUnknown;
+  $("#back-link").hidden = route === "today";
+  $("#today-view").hidden = route !== "today";
+  $("#records-view").hidden = route !== "records";
+  $("#queries-view").hidden = route !== "queries";
+  $("#page-title").textContent = route === "records" ? "오늘 " + name + " 기록" : route === "queries" ? name + " 데이터 조회 기록" : "오늘 운영";
+  $("#page-description").textContent = route === "records" ? "선택한 기준 시각까지의 기록입니다. 수량은 수정하지 않습니다." :
+    route === "queries" ? "이 브라우저 탭의 최근 200건입니다. 실제 요청 시각과 조회 대상 시각을 구분합니다." : "생산·출고 실적과 운영 상태를 살펴봅니다.";
+  $("#queries-view").replaceChildren(...(route === "queries" ? [el("p", "notice", "조회 기록이 없습니다.")] : []));
+
   const now = Date.parse(data.viewTime);
   renderSite("factory", data.sites.factory, now);
   renderSite("warehouse", data.sites.warehouse, now);
@@ -154,4 +177,8 @@ function render(data) {
   card.querySelector(".meta").textContent = "마지막 전송 시도: " + dateText(alerts.lastAttemptAt);
 }
 
-render(window.SAMPLE_SNAPSHOT);
+window.addEventListener("hashchange", () => {
+  render();
+  window.scrollTo(0, 0);
+});
+render();
