@@ -110,5 +110,87 @@ var TumbleCore = (function () {
       });
   }
 
-  return { iso: iso, day: day, view: view, parse: parse, recordsAt: recordsAt };
+  var SITES = {
+    factory: { kind: "production", label: "텀블공장", target: "factory_target", paused: "factory_paused", incident: "FACTORY-FEED", image: "./assets/approved/factory.png", alt: "공장 생산 참고 사진" },
+    warehouse: { kind: "shipment", label: "물류창고", target: "warehouse_target", paused: "warehouse_paused", incident: "WAREHOUSE-FEED", image: "./assets/approved/warehouse.png", alt: "창고 출고 참고 사진" }
+  };
+
+  // 오늘 운영 화면이 받는 JSON을 만듭니다.
+  function snapshot(records, settings, meta, alerts, at, now, errors) {
+    var cutoff = view(at, now);
+    var incidents = [];
+    var sites = {};
+    ["factory", "warehouse"].forEach(function (name) {
+      var site = SITES[name];
+      var rows = recordsAt(records, site.kind, cutoff);
+      var latest = rows.length ? rows[rows.length - 1] : null;
+      var completed = rows.filter(function (record) { return record.processedAt; });
+      var pending = rows.some(function (record) { return !record.processedAt; });
+      var paused = pending && settings[site.paused] === true;
+      var stale = isDelayed_(latest, cutoff, settings.delay_minutes);
+      var note = !latest ? "기록이 없습니다."
+        : paused ? "기록 처리가 일시 정지됐습니다."
+        : pending ? "처리를 기다리는 기록이 있습니다."
+        : stale ? "새 기록이 늦게 들어오고 있습니다."
+        : "기록이 반영되고 있습니다.";
+      var hourly = groupHourly_(completed);
+      var status = !latest || pending || stale ? "warning" : "normal";
+      sites[name] = {
+        label: site.label,
+        target: settings[site.target],
+        completed: completed.length ? sumQuantities_(completed) : null,
+        lastEventAt: latest ? latest.occurredAt : null,
+        receivedAt: latest ? latest.receivedAt : null,
+        processedAt: latest ? latest.processedAt : null,
+        processingState: paused ? "paused" : pending || !latest ? "waiting" : "completed",
+        status: status,
+        note: note,
+        history: Object.keys(hourly).sort().map(function (key) { return { timestamp: key, quantity: hourly[key] }; }),
+        image: { url: site.image, alt: site.alt }
+      };
+      if (status === "warning") {
+        incidents.push({ id: site.incident, scope: name, level: "warning", title: site.label + ": " + note, owner: "기록 담당자", action: "시트의 기록과 처리 상태를 확인해 주세요." });
+      }
+    });
+    if (errors && errors.length) {
+      incidents.push({
+        id: "INPUT-ERROR",
+        scope: "service",
+        level: "warning",
+        title: "입력값을 확인할 기록이 있습니다.",
+        owner: "기록 담당자",
+        action: errors.map(function (error) { return error.sheet + " " + error.row + "행: " + error.message; }).join(" / ")
+      });
+    }
+    var last = null;
+    alerts.forEach(function (alert) {
+      if (Date.parse(alert.at) <= Date.parse(cutoff)) last = alert;
+    });
+    if (last && last.status === "failed") {
+      incidents.push({ id: "ALERT-DELIVERY", scope: "service", level: "error", title: "알림 전송에 실패했습니다.", owner: "서비스 담당자", action: "알림 기록과 웹훅 설정을 확인해 주세요." });
+    }
+    return {
+      schemaVersion: 1,
+      scenarioId: "normal",
+      revision: meta.revision,
+      changedAt: meta.changedAt,
+      serverTime: iso(now),
+      viewTime: cutoff,
+      mode: at ? "past" : "current",
+      sessionId: meta.sessionId,
+      trainingOnly: true,
+      sites: sites,
+      services: {
+        api: { status: "normal", note: "시트 조회가 가능합니다." },
+        alerts: {
+          status: last ? last.status : "unknown",
+          lastAttemptAt: last ? last.at : null,
+          note: last ? last.message : "알림 발송 기록이 없습니다."
+        }
+      },
+      incidents: incidents
+    };
+  }
+
+  return { iso: iso, day: day, view: view, parse: parse, recordsAt: recordsAt, snapshot: snapshot };
 })();
