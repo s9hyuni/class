@@ -177,3 +177,13 @@ tr:last-child td { border-bottom: 0; }
   .notification-wrap { position: absolute; top: 16px; right: 16px; }
   .notification-dropdown { width: min(400px, calc(100vw - 32px)); padding: 16px; }
 }
+
+/* 3-5 도움말 */
+.title-with-help { display: inline-flex; align-items: center; }
+.help-wrap { position: relative; display: inline-flex; }
+.help-btn { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; padding: 0; line-height: 1; color: var(--muted); font-size: 16px; font-weight: 700; margin-left: 4px; }
+.help-btn:focus-visible, .help-btn[aria-expanded="true"] { background: var(--ink); color: #fff; }
+@media (hover: hover) and (pointer: fine) {
+  .help-btn:hover { background: var(--ink); color: #fff; }
+}
+.help-popover { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: min(300px, calc(100vw - 32px)); background: #28322c; color: #fff; font-size: 14px; line-height: 1.6; font-weight: 400; text-align: left; white-space: normal; overflow-wrap: break-word; padding: 12px 16px; border-radius: 8px; z-index: 100; box-shadow: 0 4px 14px #2227242e; }

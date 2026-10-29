@@ -226,6 +226,54 @@ function renderHero(issues) {
   $("#hero-action").textContent = "확인할 일: " + where + first.action;
 }
 
+// ── 도움말 ──
+// 열린 설명이 가장 가까운 카드(.card, .hero) 안에 들어가면 그 카드 안쪽에, 아니면 화면 좌우 16px 안쪽에 오도록 옮깁니다.
+function positionHelpPopover(pop) {
+  if (pop.hidden) return;
+  pop.style.translate = "none";
+  const bounds = pop.getBoundingClientRect();
+  const width = document.documentElement.clientWidth;
+  let min = 16, max = width - 16;
+  const card = pop.closest(".card, .hero")?.getBoundingClientRect();
+  if (card && Math.min(max, card.right) - Math.max(min, card.left) >= bounds.width) {
+    min = Math.max(min, card.left);
+    max = Math.min(max, card.right);
+  }
+  const left = Math.max(min, Math.min(bounds.left, max - bounds.width));
+  pop.style.translate = (left - bounds.left) + "px 0";
+}
+// 어떤 방법으로 닫든 고정 표시(data-pinned)는 "false"로 돌립니다.
+function closeHelp(pop) {
+  const btn = pop.closest(".help-wrap").querySelector(".help-btn");
+  pop.hidden = true;
+  btn.setAttribute("aria-expanded", "false");
+  btn.dataset.pinned = "false";
+}
+const openHelps = () => document.querySelectorAll(".help-popover:not([hidden])");
+function setupHelp(btn) {
+  const wrap = btn.closest(".help-wrap"), pop = wrap.querySelector(".help-popover");
+  // 하나를 열면 열려 있던 다른 도움말과 알림 목록을 닫습니다.
+  function open() {
+    for (const other of openHelps()) if (other !== pop) closeHelp(other);
+    toggleNotifications(false);
+    pop.hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    positionHelpPopover(pop);
+  }
+  btn.addEventListener("mouseenter", open);
+  wrap.addEventListener("mouseleave", () => {
+    if (document.activeElement !== btn && btn.dataset.pinned !== "true") closeHelp(pop);
+  });
+  btn.addEventListener("focus", open);
+  btn.addEventListener("blur", () => {
+    if (btn.dataset.pinned !== "true") closeHelp(pop);
+  });
+  btn.addEventListener("click", () => {
+    if (btn.dataset.pinned !== "true") { btn.dataset.pinned = "true"; open(); }
+    else closeHelp(pop);
+  });
+}
+
 let lastData = window.SAMPLE_SNAPSHOT;
 
 // 자료(snapshot) 하나를 받아 화면 전체 값을 채웁니다. 주소에 맞는 화면 하나만 보입니다.
@@ -266,14 +314,26 @@ $("#record-filter").addEventListener("submit", (event) => {
   render();
 });
 $("#header-alerts-link").addEventListener("click", () => toggleNotifications());
+for (const btn of document.querySelectorAll(".help-btn")) setupHelp(btn);
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".notification-wrap")) toggleNotifications(false);
+  if (!event.target.closest(".help-wrap")) for (const pop of openHelps()) closeHelp(pop);
 });
+// Escape는 이 처리기 하나에서 받아 열린 알림 목록과 도움말을 함께 닫습니다.
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !$("#notification-dropdown").hidden) {
+  if (event.key !== "Escape") return;
+  if (!$("#notification-dropdown").hidden) {
     toggleNotifications(false);
     $("#header-alerts-link").focus();
   }
+  for (const pop of openHelps()) {
+    // 초점을 먼저 옮긴 뒤 닫습니다. 닫은 뒤에 옮기면 버튼의 focus 처리기가 다시 엽니다.
+    pop.closest(".help-wrap").querySelector(".help-btn").focus();
+    closeHelp(pop);
+  }
+});
+window.addEventListener("resize", () => {
+  for (const pop of openHelps()) positionHelpPopover(pop);
 });
 window.addEventListener("hashchange", () => {
   render();
