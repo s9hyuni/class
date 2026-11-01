@@ -1,0 +1,362 @@
+# 6회차: Discord 알림, 기록 처리, 트리거
+
+- 시작 상태: 5회차를 끝낸 `C:\ai-class\tumble-dashboard`에서 이어 합니다(완료 브랜치 `milestone-5`와 같은 출발점). 내 GAS 웹 앱이 배포돼 있고, 화면은 내 Google 시트 값으로 "조회 정상"이며 기록 보기도 됩니다.
+- 끝나면 되는 것
+  - 내 Discord 시험 채널로 알림이 가고, 화면의 운영 상태 알림 카드에 "전송 성공"이 뜹니다.
+  - GAS 편집기에서 함수를 실행하거나 시트를 직접 고쳐 기록을 더하고 처리하면 화면 수량이 바뀝니다.
+  - 자동 실행(트리거) 두 개가 동작합니다. 하나는 시트를 고치면 바로 처리하고, 하나는 1분마다 늦은 기록을 알립니다. 실습이 끝나면 지웁니다.
+- 준비물: 5회차에 쓴 개인 Google 계정으로 로그인한 Chrome, Discord 계정(Chrome에서 https://discord.com 으로 써도 됩니다), 화면 서버를 켜 둔 터미널(이하 화면 창)
+
+## 시작 전에 (프롬프트 없이 직접 합니다)
+
+**5회차를 못 끝냈으면** 먼저 완료 브랜치를 받습니다. 5회차를 끝냈으면 이 부분은 건너뛰고 아래 "수업 날 새 실습 시트 만들기"로 갑니다.
+
+- 직접 하기: PowerShell에서 옛 폴더 이름을 바꾸고 `milestone-5`를 받습니다. 받은 폴더에는 5회차까지의 약속이 든 `AGENTS.md`가 이미 있습니다.
+
+```powershell
+cd C:\ai-class
+Rename-Item tumble-dashboard tumble-dashboard-old
+git clone -b milestone-5 https://github.com/startup-life/aiops-dashboard-student.git tumble-dashboard
+cd tumble-dashboard
+```
+
+- 직접 하기: 5회차에서 Google 프로젝트를 만들고 배포까지 했으면, 옛 폴더의 연결 파일과 화면 설정을 새 폴더로 복사한 뒤 코드를 다시 올립니다. `gas:deploy`는 하지 않습니다(배포가 하나 더 생겨 주소가 바뀝니다).
+
+```powershell
+Copy-Item ..\tumble-dashboard-old\.clasp.json .
+Copy-Item ..\tumble-dashboard-old\public\config.js public\config.js
+npm.cmd run gas:push
+npm.cmd run gas:redeploy
+```
+
+- 확인: 마지막 줄이 "같은 배포를 새 버전으로 갱신했습니다. 주소는 그대로입니다."입니다. `notepad public\config.js`로 열면 `apiBaseUrl`이 `https://script.google.com/macros/s/…/exec`이고 `timeoutMs`가 `15000`입니다. 아니면 `npm.cmd run gas:editor`로 편집기를 열고 위쪽 배포, 배포 관리에서 설명이 `dashboard`인 배포의 웹 앱 URL을 복사해 직접 고칩니다.
+- 직접 하기: Google 프로젝트를 만든 적이 없으면(옛 폴더에 `.clasp.json`이 없으면) 위 복사 대신, 5회차 파일에서 프롬프트 없는 직접 하기 단계만 차례로 합니다. 5-2(Apps Script API 켜기), 5-13(`gas:login`), 5-39(`gas:create`), 5-40(`gas:push`), 5-41(첫 권한 승인과 실습 시트 만들기), 5-42(`gas:deploy`), 5-43(`gas:open`), 5-44(화면 확인)입니다.
+- 직접 하기: Antigravity로 새 `C:\ai-class\tumble-dashboard` 폴더를 엽니다.
+
+**수업 날 새 실습 시트 만들기**: 화면은 "오늘" 기록만 셉니다. 5회차에 만든 시트의 시드 기록은 그날 날짜라서 오늘 화면에는 기록이 없게 나옵니다. 오늘 날짜로 시드 기록이 든 새 시트를 만듭니다. 웹 앱은 다시 배포하지 않아도 새 시트를 읽습니다.
+
+- 직접 하기: Antigravity 터미널에서 `npm.cmd run gas:editor`로 편집기를 엽니다.
+- 직접 하기: Chrome에 열린 편집기 오른쪽 위 계정이 5회차에 쓴 개인 Google 계정인지 봅니다. 왼쪽 파일 목록에서 `Setup.gs`를 누르고, 위쪽 함수 선택에서 `createTrainingSpreadsheet`를 골라 "실행"을 누릅니다.
+- 직접 하기: 화면 창에서 `npm.cmd start`로 화면 서버를 켜고 Chrome에서 http://127.0.0.1:4173 을 엽니다.
+- 확인: 실행 로그에 `새 실습 시트: https://docs.google.com/spreadsheets/…`가 나옵니다. 10~15초 안에 화면이 "생산 100개 · 목표 120개", "출고 75개 · 목표 100개"이고 "조회 정상"입니다.
+- 이 시트는 이번 회차 내내 씁니다. 실행 로그의 주소를 Ctrl+클릭해 새 탭으로 열어 둡니다. 주소는 다른 곳에 옮기지 않습니다.
+
+## 진행 방법
+
+- **꼭 지킬 것**: Discord 웹훅 주소를 아는 사람은 누구나 내 채널에 글을 보낼 수 있습니다. 주소는 GAS 스크립트 속성에만 넣고 채팅, 화면 공유, 캡처, 코드, 시트에 옮기지 않습니다.
+- 차례: 6-1 약속 더하기, 6-2~6-10 Discord 시험 알림, 6-11~6-20 기록 더하기와 처리하기, 6-21~6-26 트리거, 6-27 발표 준비, 6-28 트리거 지우기.
+- 이번 회차 프롬프트는 Google 쪽 코드에 함수를 하나씩 더합니다. Antigravity는 내 컴퓨터의 파일만 고칩니다. Google에 반영하려면 내가 `npm.cmd run gas:push`로 올려야 합니다.
+- 올린 뒤에는 편집기 탭을 새로고침(F5)해야 새 함수가 함수 선택 목록에 보입니다. 함수 목록은 왼쪽에서 고른 파일 기준이라, 이번 회차 함수는 `Code.gs`를 누른 뒤 고릅니다.
+- 이번 회차는 웹 앱의 응답을 바꾸지 않습니다. 그래서 **`gas:redeploy`는 하지 않습니다.** 편집기 실행과 트리거는 `gas:push`로 올린 코드로 바로 돌아갑니다.
+- 화면은 10초마다 다시 조회합니다. 시트가 바뀐 뒤 10~15초 기다리면 화면에 반영됩니다. 화면 서버는 켜 둔 채로 진행합니다. 화면 파일은 이번 회차에 바뀌지 않습니다.
+- 이 회차는 따라잡기와 발표 시간도 겸합니다. 프롬프트는 짧고, 대부분은 편집기와 시트에서 직접 확인합니다.
+
+## 6-1. 6회차 약속 더하기
+
+```text
+AGENTS.md 끝에 아래 글을 그대로 덧붙여 주세요.
+"## 6회차 약속" 절이 이미 있으면 아무것도 바꾸지 말고 그대로 두세요.
+
+---- 아래 글 그대로 ----
+## 6회차 약속
+- Discord 웹훅 주소는 채팅에 옮겨 적지 않고 코드·시트·문서·로그에 쓰지 않습니다. 사용자가 스크립트 속성 DISCORD_WEBHOOK_URL에 직접 넣습니다.
+- GAS 편집기 실행, 스크립트 속성, 트리거 메뉴, Discord 설정은 사용자가 직접 합니다. 브라우저를 대신 조작하지 않습니다.
+- 이번 회차 함수는 모두 gas/Code.gs 끝에 더합니다. 웹 앱 입구(doGet)는 바꾸지 않으므로 사용자는 gas:push만 하고 gas:redeploy는 하지 않습니다.
+- 사용자가 편집기에서 고르는 함수(이름 끝에 _ 없음): testDiscordAlert, processPendingRecords, addDemoProductionRecord, installTrainingTriggers. 트리거가 부르는 함수: onEditInstalled, checkRecordDelays.
+- withLock_(fn): LockService.getScriptLock()으로 최대 20000밀리초 기다려 잠그고 fn()의 값을 돌려주며, 오류가 나도 끝나면 잠금을 풉니다. 시트에 쓰는 편집기 함수와 트리거 함수는 모두 이 안에서 실행합니다.
+- sendAlert_(key, message): 같은 key는 설정 cooldown_minutes분 안에 다시 보내지 않습니다. 그 시간 안이면 보내지도, 알림 기록 탭에 쓰지도, ALERT_ 속성을 고치지도 않고 끝냅니다. 마지막 시도 시각(밀리초)은 스크립트 속성 "ALERT_" + meta_().sessionId + "_" + key에 두고, 없으면 0으로 봅니다.
+- 웹훅 주소는 DISCORD_WEBHOOK_URL에서만 읽고, /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/에 맞을 때만 UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "application/json", payload: JSON.stringify({ content: 보낼 글, allowed_mentions: { parse: [] } }), muteHttpExceptions: true })로 보냅니다.
+- 보낼 글은 message가 "텀블공장: "이나 "물류창고: "로 시작하면 그대로, 아니면 "텀블공장: " + message입니다(현장 이름이 두 번 붙지 않게).
+- 결과는 응답 코드 200~299면 "sent", 아니면 "failed"이고 상세는 "HTTP " + 코드입니다. 주소가 없거나 틀리거나 보내다 오류가 나면 "failed", 상세 "알림 연결 또는 웹훅 설정을 확인해 주세요."입니다.
+- 결과는 알림 기록 탭 끝에 [지금 ISO 시각, key, message(이름을 붙이기 전 글), 발송 상태, 상세]를 toRow_로 한 행 더하고, 실패여도 ALERT_ 속성에 지금 시각을 저장합니다. 화면 알림 카드는 이 탭의 마지막 행을 읽습니다.
+- testDiscordAlert(): withLock_ 안에서 sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.")를 부릅니다.
+- rememberSettings_(): meta_()의 revision을 1 올리고 changedAt을 지금으로 바꿉니다. 설정 탭 A1 메모의 설정 이력 끝에 { at: 지금, settings: settings_(), revision: 새 revision }을 더하고, 바뀐 meta를 TUMBLE_META에 저장합니다.
+- processRow_(sheet, row, notify) 앞부분: 그 행 1~6열을 fromCell_로 읽고 A칸 메모를 봅니다. 메모가 있고 원본에 처리 시각이 있으면 행을 원본(toRow_)으로 되돌려 쓰고 끝냅니다. 메모가 있고 처리 전이면 원본 값으로 이어 처리하고, 메모가 없으면 접수·처리 시각을 비웁니다.
+- processRow_ 검사: kind는 탭이 "생산 기록"이면 production, 아니면 shipment입니다. 같은 탭 다른 행에 같은 ID(String 비교, 빈 ID는 제외)가 있거나 TumbleCore.parse([값], kind, 지금)에 오류가 있으면 6열에 "입력 확인 필요"를 쓰고, notify면 sendAlert_("input-" + kind + "-" + 행 번호, "같은 기록 ID가 있습니다." 또는 parse 첫 오류 문장)을 부른 뒤 끝냅니다.
+- processRow_ 끝부분: 빈 행이면 끝냅니다. 접수 시각이 비었으면 지금으로 채웁니다. 그 현장 처리 정지(factory_paused·warehouse_paused)가 true면 처리 시각 "", 처리 상태 "처리 대기", 아니면 처리 시각 지금, 처리 상태 "완료"입니다. 값을 toRow_로 그 행에 쓰고 A칸 메모에 값의 JSON을 씁니다.
+- processPendingRecords(): 두 기록 탭의 2행부터 마지막 행까지 processRow_(탭, 행, true)를 부르고 끝에 rememberSettings_()를 부릅니다.
+- addDemoProductionRecord(): 생산 기록 탭 끝에 ["P-" + Utilities.getUuid(), 10, 지금 ISO 시각, "", "", "대기"]를 toRow_로 더하고, 그 행에 processRow_(탭, 행, true)를 부른 뒤 rememberSettings_()를 부릅니다.
+- onEditInstalled(e): e나 e.range가 없거나 e.source.getId()가 SPREADSHEET_ID와 다르면 아무것도 하지 않습니다. 편집한 탭이 "설정"이면 rememberSettings_()만 부릅니다. 기록 탭이 아니거나 편집 범위 첫 행이 1행이면 끝냅니다. 그 밖에는 편집 범위의 행마다 processRow_(탭, 행, true) 뒤 rememberSettings_()입니다.
+- checkRecordDelays(): readData_()로 지금 자료를 읽어 TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), null, data.now, data.errors)를 만들고, incidents 가운데 scope가 "service"가 아닌 것마다 sendAlert_(사건 id, alertMessage_(사건))를 부릅니다.
+- installTrainingTriggers(): SPREADSHEET_ID가 없으면 "시트를 먼저 생성해 주세요.". 실행 함수가 onEditInstalled나 checkRecordDelays인 트리거를 모두 지운 뒤 ScriptApp.newTrigger("onEditInstalled").forSpreadsheet(시트 ID).onEdit().create()와 ScriptApp.newTrigger("checkRecordDelays").timeBased().everyMinutes(1).create()를 만듭니다. 여러 번 실행해도 두 개만 남습니다.
+```
+
+- 확인: Antigravity에서 `AGENTS.md`를 열면 맨 끝에 "## 6회차 약속" 절이 있습니다.
+
+## 6-2. 한 번에 하나씩 실행되게
+
+시트에 쓰는 일이 동시에 두 개 실행되면 같은 줄을 겹쳐 쓸 수 있습니다. 한 번에 하나만 실행되게 하는 도구를 먼저 만듭니다.
+
+```text
+6회차 약속대로, 시트에 쓰는 일이 한 번에 하나씩만 실행되게 하는 잠금 도구를 Google 쪽 코드에 만들어 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 아직 Google에 올리지 않았습니다.
+
+## 6-3. Discord로 알림 보내기
+
+```text
+6회차 약속대로 Discord로 알림을 보내는 도구를 만들어 주세요.
+웹훅 주소는 스크립트 속성에서만 읽고, 같은 알림은 정해 둔 시간 안에 다시 보내지 않게 해 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다.
+
+## 6-4. 현장 이름은 한 번만
+
+```text
+보내는 알림 앞에 "텀블공장: "을 붙여 주세요.
+알림이 이미 "텀블공장: "이나 "물류창고: "로 시작하면 그대로 보내서 이름이 두 번 붙지 않게 해 주세요.
+```
+
+- 확인: AI가 고쳤다고 알려 줍니다. 이름이 한 번만 붙는지는 6-9와 6-26에서 Discord로 봅니다.
+
+## 6-5. 보낸 결과를 알림 기록 탭에 남기기
+
+```text
+알림을 보낸 결과(성공·실패)를 시트의 "알림 기록" 탭 끝에 6회차 약속대로 한 줄씩 남겨 주세요.
+주소가 없어 못 보낸 것도 실패로 남깁니다.
+```
+
+- 확인: AI가 고쳤다고 알려 줍니다. 화면의 알림 카드는 이 탭의 마지막 줄을 읽습니다.
+
+## 6-6. 알림 시험 함수
+
+```text
+편집기에서 실행하는 알림 시험 함수를 만들어 주세요. 실행하면 "알림 연결 테스트입니다."를 보냅니다.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 이 함수는 편집기 함수 목록에 `testDiscordAlert`로 보입니다(6-9에서 고릅니다).
+
+## 6-7. Discord 웹훅 만들기 (직접 하기)
+
+- 직접 하기: Discord에서 내가 만든 서버의 시험 채널을 고릅니다. 서버가 없으면 왼쪽 맨 아래 "+"(서버 추가하기), "직접 만들기"로 하나 만듭니다.
+- 직접 하기: 채널 이름 옆 톱니바퀴(채널 편집), "연동", "웹후크", "새 웹후크"를 차례로 누릅니다.
+- 직접 하기: 새로 생긴 웹후크를 열고 "웹후크 URL 복사"를 누릅니다. 복사한 주소는 메모장이나 채팅에 붙여 넣지 않고 바로 6-8에서 씁니다.
+- 확인: 복사한 주소는 `https://discord.com/api/webhooks/`와 숫자로 시작합니다(눈으로만 봅니다).
+
+## 6-8. 스크립트 속성에 웹훅 주소 넣기 (직접 하기)
+
+- 직접 하기: GAS 편집기 왼쪽 톱니바퀴(프로젝트 설정)를 누르고 아래 "스크립트 속성"으로 내려갑니다.
+- 직접 하기: "스크립트 속성 수정", "스크립트 속성 추가"를 누르고 속성에 `DISCORD_WEBHOOK_URL`, 값에 복사한 웹훅 주소를 붙여 넣은 뒤 "스크립트 속성 저장"을 누릅니다.
+- 직접 하기: 이미 있는 `SPREADSHEET_ID`, `TUMBLE_META`는 고치지 않습니다.
+- 확인: 스크립트 속성 목록에 `DISCORD_WEBHOOK_URL`이 생겼습니다. 이 화면은 캡처하지 않습니다.
+
+## 6-9. 올리고 시험 알림 보내기 (직접 하기)
+
+- 직접 하기: Antigravity 터미널에서 `npm.cmd run gas:push`를 칩니다. `Pushed 5 files`가 나오면 편집기 탭을 새로고침합니다.
+- 직접 하기: 왼쪽에서 `Code.gs`를 누르고 함수 선택에서 `testDiscordAlert`를 골라 "실행"을 누릅니다.
+- 직접 하기: 실행 로그에 외부 서비스에 연결할 권한이 없다는 오류가 나오면, 5회차 5-41(첫 권한 승인)에서 일부만 고른 것입니다. 다시 "실행"을 눌러 승인 창이 나오면 "모두 선택"으로 승인합니다.
+- 확인: 시험 채널에 "텀블공장: 알림 연결 테스트입니다."가 옵니다.
+- 확인: 시트 알림 기록 탭에 한 줄이 생깁니다. 사건 ID는 `test-`로 시작하고, 내용 "알림 연결 테스트입니다.", 발송 상태 `sent`, 상세 `HTTP 200`입니다.
+- 확인: 10~15초 안에 화면의 운영 상태 알림 카드가 "전송 성공", "알림 전송이 완료됐습니다."로 바뀌고 마지막 전송 시도 시각이 나옵니다.
+- 알아 두기: 스크립트 속성에 `ALERT_`로 시작하는 속성이 하나 생깁니다. 같은 알림을 잠시 다시 보내지 않으려고 보낸 시각을 적어 둔 것입니다. 지우지 않습니다.
+
+## 6-10. 실패도 보이는지 확인 (직접 하기)
+
+- 직접 하기: 스크립트 속성에서 `DISCORD_WEBHOOK_URL` 줄을 지우고 저장한 뒤 `testDiscordAlert`를 실행합니다.
+- 확인: 알림 기록 탭에 `failed`, 상세 "알림 연결 또는 웹훅 설정을 확인해 주세요."가 남습니다. 화면 알림 카드가 "실패"가 되고, 화면 위 `알림 N건`을 누르면 "알림 전송에 실패했습니다."와 "담당자: 서비스 담당자"가 보입니다.
+- 직접 하기: Discord에서 "웹후크 URL 복사"를 다시 눌러 6-8처럼 `DISCORD_WEBHOOK_URL`을 다시 넣고 `testDiscordAlert`를 실행합니다.
+- 확인: 알림 기록이 `sent`로 돌아오고, 화면 알림 카드가 "전송 성공"이 되며 실패 알림이 목록에서 빠집니다.
+
+## 6-11. 설정 이력 남기기
+
+화면은 설정 탭을 바로 읽지 않고, 설정 탭 A1 칸의 메모(설정 이력)를 읽습니다. 기록을 처리할 때마다 지금 설정을 이력에 더하는 도구를 만듭니다.
+
+```text
+6회차 약속대로, 지금 설정을 설정 이력 끝에 한 번 더 남기는 도구를 만들어 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다.
+
+## 6-12. 한 줄 처리하기 1: 접수한 원본 지키기
+
+기록 줄의 A칸 메모에는 접수한 기록의 원본이 들어 있습니다. 접수한 기록은 시트에서 고쳐도 화면 값이 바뀌지 않게 합니다.
+
+```text
+기록 탭의 한 줄을 접수하고 처리하는 도구를 6회차 약속대로 만들어 주세요. 이번에는 앞부분만 만듭니다.
+처리를 마친 기록은 시트에서 고쳐도 접수한 원본으로 되돌려 씁니다.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다.
+
+## 6-13. 한 줄 처리하기 2: 입력 검사
+
+```text
+한 줄 처리에 입력 검사를 더해 주세요.
+기록 ID가 같은 탭에 또 있거나 값이 틀리면, 처리 상태 칸에 "입력 확인 필요"를 쓰고 Discord로 알립니다.
+```
+
+- 확인: AI가 고쳤다고 알려 줍니다.
+
+## 6-14. 한 줄 처리하기 3: 접수와 처리
+
+```text
+한 줄 처리의 끝부분을 만들어 주세요. 접수 시각과 처리 시각을 채우고 처리 상태를 "완료"로 씁니다.
+그 현장의 처리 정지 설정이 켜져 있으면 처리 시각은 비우고 처리 상태를 "처리 대기"로 씁니다.
+```
+
+- 확인: AI가 고쳤다고 알려 줍니다.
+
+## 6-15. 모든 기록 처리 함수
+
+```text
+편집기에서 실행하면 생산 기록·출고 기록 두 탭의 모든 줄을 처리하는 함수를 만들어 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 편집기 함수 목록에는 `processPendingRecords`로 보입니다.
+
+## 6-16. 데모 생산 기록 함수
+
+```text
+편집기에서 실행하면 생산 기록 탭 끝에 수량 10인 기록 한 줄을 더하고 바로 처리하는 함수를 만들어 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 편집기 함수 목록에는 `addDemoProductionRecord`로 보입니다.
+
+## 6-17. 올리고 데모 기록 더하기 (직접 하기)
+
+- 직접 하기: `npm.cmd run gas:push`로 올리고 편집기 탭을 새로고침합니다. `Code.gs`에서 `addDemoProductionRecord`를 골라 실행합니다.
+- 확인: 생산 기록 탭 끝에 `P-`로 시작하는 줄 하나(수량 10, 처리 상태 "완료")가 더해지고, 시각 칸은 날짜가 아니라 글자 그대로 보입니다.
+- 확인: 10~15초 안에 화면이 "생산 110개 · 목표 120개"가 됩니다.
+
+## 6-18. 처리 정지와 다시 처리 (직접 하기)
+
+- 직접 하기: 시트 설정 탭에서 `factory_paused`의 값 칸을 `TRUE`로 바꾸고, 편집기에서 `addDemoProductionRecord`를 한 번 더 실행합니다.
+- 확인: 새 줄의 처리 시각이 비고 처리 상태가 "처리 대기"입니다. 화면 수량은 110개 그대로이고 생산 카드에 "기록 처리가 일시 정지됐습니다."가 나옵니다.
+- 직접 하기: `factory_paused`를 `FALSE`로 되돌리고 `processPendingRecords`를 실행합니다.
+- 확인: 그 줄이 "완료"가 되고 화면이 "생산 120개 · 목표 120개"가 됩니다.
+- 알아 두기: 설정 탭을 고치기만 해서는 화면이 바뀌지 않습니다. 기록 함수가 실행될 때 설정이 이력에 남고, 웹 앱은 그 이력을 읽습니다. 6-24에서 트리거를 설치하면 고치는 즉시 남습니다.
+
+## 6-19. 접수한 기록을 고쳐 보기 (직접 하기)
+
+- 직접 하기: 생산 기록 탭 2행(`P-seed-0`)의 수량을 20에서 25로 바꿉니다.
+- 확인: 10~15초 안에 화면 위 `알림 N건`을 누르면 "입력값을 확인할 기록이 있습니다."와 "할 일: 생산 기록 2행: 접수한 기록의 수정은 반영하지 않습니다. 새 실습 시트를 만들어 주세요."가 보입니다. 생산 수량은 그대로입니다.
+- 직접 하기: 편집기에서 `processPendingRecords`를 실행합니다.
+- 확인: 그 칸이 20으로 돌아오고 그 알림이 목록에서 빠집니다.
+
+## 6-20. 시트에 직접 기록 쓰기 (직접 하기)
+
+- 직접 하기: 생산 기록 탭의 빈 줄 A칸에 `P-hand-1`, B칸에 `5`를 씁니다.
+- 직접 하기: 발생 시각은 바로 위 줄의 C칸(발생 시각)만 복사해 붙여 넣습니다. **A칸은 복사하지 않습니다.** A칸에는 원본 메모가 들어 있어 메모까지 옮겨집니다.
+- 확인: 화면 생산 카드가 "처리를 기다리는 기록이 있습니다."가 되고, 생산 기록 보기에서 그 줄이 "접수 대기"입니다.
+- 직접 하기: 편집기에서 `processPendingRecords`를 실행합니다.
+- 확인: 그 줄의 접수 시각·처리 시각이 채워지고 처리 상태가 "완료"가 됩니다. 화면이 "생산 125개"가 됩니다.
+
+## 6-21. 시트를 고치면 바로 처리하는 함수
+
+이제 편집기에서 손으로 실행하던 처리를, 시트를 고치는 순간 자동으로 하게 합니다.
+
+```text
+시트를 고치면 고친 기록 줄을 바로 처리하는 함수를 6회차 약속대로 만들어 주세요(자동 실행용).
+설정 탭을 고쳤을 때는 설정 이력만 남깁니다.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 이 함수는 6-24 뒤 트리거 목록에 `onEditInstalled`로 보입니다.
+
+## 6-22. 늦은 기록을 알리는 함수
+
+```text
+1분마다 자동으로 실행되어, 생산·출고에 확인할 일이 있으면 Discord로 알리는 함수를 만들어 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 이 함수는 6-24 뒤 트리거 목록에 `checkRecordDelays`로 보입니다.
+
+## 6-23. 자동 실행 설치 함수
+
+```text
+방금 만든 '시트를 고치면 처리하는 함수'와 '늦은 기록을 알리는 함수'의 자동 실행(트리거)을 만드는 함수를 만들어 주세요.
+여러 번 실행해도 트리거가 두 개만 남게 해 주세요.
+```
+
+- 확인: AI가 만들었다고 알려 줍니다. 편집기 함수 목록에는 `installTrainingTriggers`로 보입니다.
+
+## 6-24. 올리고 트리거 설치 (직접 하기)
+
+- 직접 하기: `npm.cmd run gas:push`로 올리고 편집기 탭을 새로고침합니다. `Code.gs`에서 `installTrainingTriggers`를 골라 실행합니다. 새 승인 창이 나오면 "모두 선택"으로 승인합니다.
+- 직접 하기: 편집기 왼쪽 트리거(시계 모양) 메뉴를 엽니다.
+- 확인: 트리거 목록에 두 줄이 있습니다. `onEditInstalled`(스프레드시트에서, 수정 시)와 `checkRecordDelays`(시간 기반)입니다. 목록에는 "시간 기반"으로만 보이고 1분 간격은 나오지 않습니다.
+- 확인: `installTrainingTriggers`를 한 번 더 실행해도 두 줄만 남습니다.
+- 알아 두기: 새 시트를 만든 지 30분이 넘었으면 1~2분 안에 시험 채널에 "새 기록이 늦게 들어오고 있습니다." 알림이 올 수 있습니다. 정상입니다(6-26에서 봅니다).
+
+## 6-25. 시트를 고치면 바로 처리되는지 확인 (직접 하기)
+
+- 직접 하기: 생산 기록 탭 빈 줄에 `P-hand-2`, 수량 `5`를 쓰고, 발생 시각은 위 줄의 C칸만 복사해 붙여 넣습니다.
+- 확인: 세 칸을 다 채우고 몇 초 안에 접수·처리 시각이 채워지고 처리 상태가 "완료"가 됩니다.
+- 알아 두기: 칸을 하나씩 채우는 동안 처리 상태가 "입력 확인 필요"가 되고, 시험 채널에 "텀블공장: 수량은 1~10000의 정수입니다." 같은 입력 알림이 한 번 갈 수 있습니다. 세 칸을 다 채우면 "완료"로 바뀝니다.
+- 직접 하기: `P-seed-0`의 수량을 25로 바꿉니다.
+- 확인: 몇 초 안에 20으로 돌아옵니다.
+- 직접 하기: 설정 탭 `factory_target`을 `150`으로 바꿉니다.
+- 확인: 10~15초 안에 화면이 "목표 150개"가 됩니다. 확인했으면 `120`으로 되돌립니다.
+- 알아 두기: 설정 값에 범위를 벗어난 값(예: 목표에 글자)을 쓰면 화면이 바뀌지 않습니다. 편집기 왼쪽 실행 메뉴에서 `onEditInstalled`의 오류 문구(예: "목표는 양의 정수 또는 빈칸입니다.")를 보고 값을 고칩니다.
+
+## 6-26. 늦은 기록 자동 알림 확인 (직접 하기)
+
+- 직접 하기: 설정 탭 `delay_minutes`를 `1`로 바꾸고 1~2분 기다립니다.
+- 확인: 화면 두 현장이 "새 기록이 늦게 들어오고 있습니다."가 되고, 시험 채널에 아래 두 알림이 옵니다. 알림 기록 탭에는 사건 ID `FACTORY-FEED`, `WAREHOUSE-FEED`로 남습니다.
+  - "텀블공장: 새 기록이 늦게 들어오고 있습니다. 담당자: 기록 담당자 / 할 일: 시트의 기록과 처리 상태를 확인해 주세요."
+  - "물류창고: 새 기록이 늦게 들어오고 있습니다. 담당자: 기록 담당자 / 할 일: 시트의 기록과 처리 상태를 확인해 주세요."
+- 확인: 앞에 "텀블공장: 텀블공장: "이나 "텀블공장: 물류창고: "처럼 이름이 두 번 붙지 않습니다.
+- 직접 하기: 편집기 왼쪽 실행 메뉴를 엽니다.
+- 확인: `checkRecordDelays`가 1분 간격으로, `onEditInstalled`가 시트를 고칠 때마다 실행된 줄이 보입니다.
+- 직접 하기: `delay_minutes`를 `30`으로 되돌립니다.
+- 알아 두기: 같은 알림은 10분(`cooldown_minutes`) 안에는 다시 오지 않습니다.
+
+## 6-27. 발표 준비 (직접 하기)
+
+완성한 화면에서 아래 세 가지를 보여 줍니다. 캡처와 화면 공유에 웹훅 주소, GAS 웹 앱 주소, 시트 주소, 메일 주소가 보이지 않게 합니다.
+
+- 직접 하기: **내 시트 값으로 도는 화면**을 보여 줍니다. 오늘 운영 화면의 생산·출고 카드와 "조회 정상", 운영 상태 알림 카드의 "전송 성공"입니다.
+- 직접 하기: **기록이 화면까지 오는 길**을 보여 줍니다. 편집기에서 `addDemoProductionRecord`를 실행하고 10~15초 뒤 생산 수량이 10 오르는 것입니다. 트리거를 지운 뒤에도 됩니다.
+- 직접 하기: **자동 알림**을 보여 줍니다. 6-26에서 시험 채널에 온 두 알림(캡처)과 알림 기록 탭의 `FACTORY-FEED`, `WAREHOUSE-FEED` 줄입니다.
+- 확인: 세 가지를 모두 화면에서 보여 줄 수 있습니다.
+- 덧붙일 이야기: 붙여 넣은 프롬프트 가운데 결과가 기대와 달랐던 것 하나와, 그때 보낸 수정 요청.
+
+## 6-28. 실습이 끝나면 트리거 지우기 (직접 하기)
+
+발표 준비를 마친 뒤 마지막에 합니다.
+
+- 직접 하기: 편집기 왼쪽 트리거(시계 모양) 메뉴를 엽니다.
+- 직접 하기: 두 줄 각각 오른쪽 점 세 개, "트리거 삭제", "완전삭제"를 누릅니다.
+- 확인: 트리거 목록이 비었습니다.
+- 알아 두기: 지우지 않으면 수업 뒤에도 1분마다 실행되고, 현장이 확인 필요인 동안 10분마다 알림이 옵니다. 무료 Google 계정은 트리거 실행 시간에 하루 한도가 있습니다.
+- 알아 두기: 나중에 다시 쓰려면 `installTrainingTriggers`를 실행합니다. 새 실습 시트를 만든 뒤에도 다시 실행해야 합니다(시트를 고칠 때 도는 트리거는 만든 때의 시트에 걸립니다).
+
+## 6회차 끝 확인
+
+- [ ] 시험 채널에 "텀블공장: 알림 연결 테스트입니다."가 왔고, 알림 기록 탭에 `sent`·`HTTP 200` 줄이 있습니다.
+- [ ] 화면 알림 카드가 "전송 성공", "알림 전송이 완료됐습니다."입니다.
+- [ ] 웹훅 주소는 스크립트 속성 `DISCORD_WEBHOOK_URL`에만 있고, Google 쪽 코드와 시트에는 없습니다.
+- [ ] `addDemoProductionRecord`로 생산 수량이 10 오르고, `processPendingRecords`로 "처리 대기"·"접수 대기" 줄이 "완료"가 됩니다.
+- [ ] 접수한 기록의 수량을 바꿔도 화면 값은 그대로이고, 처리하면 원래 값으로 돌아옵니다.
+- [ ] 시트를 고치면 몇 초 안에 처리되고, `delay_minutes`가 1이면 두 현장의 늦은 기록 알림이 1~2분 안에 옵니다.
+- [ ] 실습 뒤 트리거 목록이 비어 있습니다.
+- [ ] 이번 회차에는 `gas:redeploy`를 하지 않았고, `public\config.js`의 주소는 5회차 그대로입니다.
+
+## 부록: AGENTS.md 6회차 약속
+
+6-1에서 덧붙이는 글입니다. 6회차 완료본(`main` 브랜치)의 AGENTS.md에도 이 절이 그대로 들어갑니다.
+
+```
+## 6회차 약속
+- Discord 웹훅 주소는 채팅에 옮겨 적지 않고 코드·시트·문서·로그에 쓰지 않습니다. 사용자가 스크립트 속성 DISCORD_WEBHOOK_URL에 직접 넣습니다.
+- GAS 편집기 실행, 스크립트 속성, 트리거 메뉴, Discord 설정은 사용자가 직접 합니다. 브라우저를 대신 조작하지 않습니다.
+- 이번 회차 함수는 모두 gas/Code.gs 끝에 더합니다. 웹 앱 입구(doGet)는 바꾸지 않으므로 사용자는 gas:push만 하고 gas:redeploy는 하지 않습니다.
+- 사용자가 편집기에서 고르는 함수(이름 끝에 _ 없음): testDiscordAlert, processPendingRecords, addDemoProductionRecord, installTrainingTriggers. 트리거가 부르는 함수: onEditInstalled, checkRecordDelays.
+- withLock_(fn): LockService.getScriptLock()으로 최대 20000밀리초 기다려 잠그고 fn()의 값을 돌려주며, 오류가 나도 끝나면 잠금을 풉니다. 시트에 쓰는 편집기 함수와 트리거 함수는 모두 이 안에서 실행합니다.
+- sendAlert_(key, message): 같은 key는 설정 cooldown_minutes분 안에 다시 보내지 않습니다. 그 시간 안이면 보내지도, 알림 기록 탭에 쓰지도, ALERT_ 속성을 고치지도 않고 끝냅니다. 마지막 시도 시각(밀리초)은 스크립트 속성 "ALERT_" + meta_().sessionId + "_" + key에 두고, 없으면 0으로 봅니다.
+- 웹훅 주소는 DISCORD_WEBHOOK_URL에서만 읽고, /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/에 맞을 때만 UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "application/json", payload: JSON.stringify({ content: 보낼 글, allowed_mentions: { parse: [] } }), muteHttpExceptions: true })로 보냅니다.
+- 보낼 글은 message가 "텀블공장: "이나 "물류창고: "로 시작하면 그대로, 아니면 "텀블공장: " + message입니다(현장 이름이 두 번 붙지 않게).
+- 결과는 응답 코드 200~299면 "sent", 아니면 "failed"이고 상세는 "HTTP " + 코드입니다. 주소가 없거나 틀리거나 보내다 오류가 나면 "failed", 상세 "알림 연결 또는 웹훅 설정을 확인해 주세요."입니다.
+- 결과는 알림 기록 탭 끝에 [지금 ISO 시각, key, message(이름을 붙이기 전 글), 발송 상태, 상세]를 toRow_로 한 행 더하고, 실패여도 ALERT_ 속성에 지금 시각을 저장합니다. 화면 알림 카드는 이 탭의 마지막 행을 읽습니다.
+- testDiscordAlert(): withLock_ 안에서 sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.")를 부릅니다.
+- rememberSettings_(): meta_()의 revision을 1 올리고 changedAt을 지금으로 바꿉니다. 설정 탭 A1 메모의 설정 이력 끝에 { at: 지금, settings: settings_(), revision: 새 revision }을 더하고, 바뀐 meta를 TUMBLE_META에 저장합니다.
+- processRow_(sheet, row, notify) 앞부분: 그 행 1~6열을 fromCell_로 읽고 A칸 메모를 봅니다. 메모가 있고 원본에 처리 시각이 있으면 행을 원본(toRow_)으로 되돌려 쓰고 끝냅니다. 메모가 있고 처리 전이면 원본 값으로 이어 처리하고, 메모가 없으면 접수·처리 시각을 비웁니다.
+- processRow_ 검사: kind는 탭이 "생산 기록"이면 production, 아니면 shipment입니다. 같은 탭 다른 행에 같은 ID(String 비교, 빈 ID는 제외)가 있거나 TumbleCore.parse([값], kind, 지금)에 오류가 있으면 6열에 "입력 확인 필요"를 쓰고, notify면 sendAlert_("input-" + kind + "-" + 행 번호, "같은 기록 ID가 있습니다." 또는 parse 첫 오류 문장)을 부른 뒤 끝냅니다.
+- processRow_ 끝부분: 빈 행이면 끝냅니다. 접수 시각이 비었으면 지금으로 채웁니다. 그 현장 처리 정지(factory_paused·warehouse_paused)가 true면 처리 시각 "", 처리 상태 "처리 대기", 아니면 처리 시각 지금, 처리 상태 "완료"입니다. 값을 toRow_로 그 행에 쓰고 A칸 메모에 값의 JSON을 씁니다.
+- processPendingRecords(): 두 기록 탭의 2행부터 마지막 행까지 processRow_(탭, 행, true)를 부르고 끝에 rememberSettings_()를 부릅니다.
+- addDemoProductionRecord(): 생산 기록 탭 끝에 ["P-" + Utilities.getUuid(), 10, 지금 ISO 시각, "", "", "대기"]를 toRow_로 더하고, 그 행에 processRow_(탭, 행, true)를 부른 뒤 rememberSettings_()를 부릅니다.
+- onEditInstalled(e): e나 e.range가 없거나 e.source.getId()가 SPREADSHEET_ID와 다르면 아무것도 하지 않습니다. 편집한 탭이 "설정"이면 rememberSettings_()만 부릅니다. 기록 탭이 아니거나 편집 범위 첫 행이 1행이면 끝냅니다. 그 밖에는 편집 범위의 행마다 processRow_(탭, 행, true) 뒤 rememberSettings_()입니다.
+- checkRecordDelays(): readData_()로 지금 자료를 읽어 TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), null, data.now, data.errors)를 만들고, incidents 가운데 scope가 "service"가 아닌 것마다 sendAlert_(사건 id, alertMessage_(사건))를 부릅니다.
+- installTrainingTriggers(): SPREADSHEET_ID가 없으면 "시트를 먼저 생성해 주세요.". 실행 함수가 onEditInstalled나 checkRecordDelays인 트리거를 모두 지운 뒤 ScriptApp.newTrigger("onEditInstalled").forSpreadsheet(시트 ID).onEdit().create()와 ScriptApp.newTrigger("checkRecordDelays").timeBased().everyMinutes(1).create()를 만듭니다. 여러 번 실행해도 두 개만 남습니다.
+```
