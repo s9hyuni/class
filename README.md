@@ -51,6 +51,6 @@ git switch milestone-N
 |---|---|---|
 | 1단계 강사 API | `"https://api-tumbler-dashboard.adapterz.kr"` | 5000 |
 | 2단계 내 서버 | `"http://127.0.0.1:3000"` | 5000 |
-| 3단계 내 GAS 웹 앱 | `"<GAS 웹앱 주소>"` | 15000 |
+| 3단계 내 GAS 웹 앱 | 내 웹 앱 주소(문서에 적지 않음) | 15000 |
 
-단계를 바꿀 때는 `apiBaseUrl`과 `timeoutMs` 두 값만 바꿉니다. 3단계 GAS 웹 앱 주소를 받으면 이 표의 `<GAS 웹앱 주소>` 자리에 적어 둡니다.
+단계를 바꿀 때는 `apiBaseUrl`과 `timeoutMs` 두 값만 바꿉니다. 3단계 GAS 웹 앱 주소는 문서에 적지 않고 내 컴퓨터의 메모와 `public/config.js`에만 둡니다.
