@@ -134,7 +134,7 @@
 - 3단계는 Google Apps Script(GAS) 웹 앱이 내 Google 시트를 읽어 1·2단계와 같은 모양으로 답합니다. 화면 코드(public)와 backend는 고치지 않습니다. 웹 앱 주소가 들어간 뒤로는 public/config.js를 열거나 출력하지 않습니다.
 - clasp는 늘 npx --yes @google/clasp@3.4.1 로 부릅니다. package.json scripts에 일곱 개를 더합니다(start·check는 그대로): "gas:login": "npx --yes @google/clasp@3.4.1 login", "gas:push": "npx --yes @google/clasp@3.4.1 push --force", "gas:editor": "npx --yes @google/clasp@3.4.1 open-script", "gas:create"·"gas:deploy"·"gas:redeploy"·"gas:open"은 각각 "node scripts/gas-clasp.mjs create"(deploy, redeploy, open)입니다.
 - .gitignore에 .clasp.json과 .runtime/ 줄을 둡니다(이미 있으면 그대로).
-- scripts/gas-clasp.mjs는 node scripts/gas-clasp.mjs create|deploy|redeploy|open으로 실행하는 Node.js 파일이고, 주석과 빈 줄을 빼고 60줄 안입니다. 다른 이름이면 "사용법: node scripts/gas-clasp.mjs create|deploy|redeploy|open"을 오류로 출력하고 종료 코드 1로 끝냅니다.
+- scripts/gas-clasp.mjs(Google 명령 파일)는 node scripts/gas-clasp.mjs create|deploy|redeploy|open으로 실행하는 Node.js 파일이고, 주석과 빈 줄을 빼고 60줄 안입니다. 다른 이름이면 "사용법: node scripts/gas-clasp.mjs create|deploy|redeploy|open"을 오류로 출력하고 종료 코드 1로 끝냅니다.
 - clasp는 "npx " + 인자를 공백으로 이은 한 줄 글자를 spawnSync에 shell: true로 넘겨 부르고(공백이 든 인자는 큰따옴표로 감쌈), 받은 출력을 화면에 그대로 보여 줍니다. 실패는 모두 오류로 출력하고 종료 코드 1로 끝냅니다.
 - 로그인 안내 글은 "로그인이 만료됐으면 npm.cmd run gas:login(macOS: npm run gas:login)을 다시 실행하세요."입니다. 웹 앱 주소가 있다는 것은 apiBaseUrl이 https://script.google.com/macros/s/(AKfyc로 시작하는 배포 ID)/exec 꼴이라는 뜻입니다.
 - create: .runtime/gas-create를 지우고 빈 폴더로 만든 뒤 clasp create-script --type standalone --title "텀블공장 개인 백엔드" --rootDir .runtime/gas-create 를 실행합니다. 출력에 Created new script가 없으면 "clasp가 프로젝트를 만들지 못했습니다. 위 출력을 확인하고, " + 로그인 안내 글입니다.
