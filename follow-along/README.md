@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | 1 | [session-1.md](session-1.md) | 48 | PC에서 오늘 운영 다섯 영역이 두 열, 375px에서 한 열로 보임(숫자는 고정 100/120, 75/100) | `milestone-1` |
 | 2 | [session-2.md](session-2.md) | 50 | 예시 자료로 수량·그래프·배지·기록 표·알림·도움말이 동작하고 다섯 화면 주소가 열림 | `milestone-2` |
-| 3 | [session-3.md](session-3.md) | 76 | 강사 공개 API 값이 10초마다 갱신되고, 실패해도 이전 값이 유지되며, 과거 시각과 조회 기록이 동작 | `milestone-3` |
+| 3 | [session-3.md](session-3.md) | 72 | 강사 공개 API 값이 10초마다 갱신되고, 실패해도 이전 값이 유지되며, 과거 시각과 조회 기록이 동작 | `milestone-3` |
 | 4 | [session-4.md](session-4.md) | 45 | 내 NestJS 서버(127.0.0.1:3000) 값으로 같은 화면 | `milestone-4` |
 | 5 | [session-5.md](session-5.md) | 47 | 내 Google 시트를 읽는 GAS 웹 앱 값으로 같은 화면과 기록 조회 | `milestone-5` |
 | 6 | [session-6.md](session-6.md) | 28 | Discord 알림, 기록 더하기·처리, 트리거 | `main` |

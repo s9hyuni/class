@@ -32,6 +32,7 @@
 - 화면 주소는 주소 끝 # 부분으로 나눕니다: #/today 오늘 운영(기본), #/records/factory 오늘 생산 기록, #/records/warehouse 오늘 출고 기록, #/queries/factory 생산 데이터 조회 기록, #/queries/warehouse 출고 데이터 조회 기록. 1회차에는 링크만 두고 화면 나누기는 2회차에 합니다.
 - index.html은 lang="ko", charset utf-8, viewport width=device-width, initial-scale=1, 빈 아이콘(href="data:,")입니다. 화면 틀(머리 부분, 카드, 제목, 칸)은 index.html에 두고, 2회차부터 JavaScript는 그 요소의 글자·숨김·class·값만 바꿉니다.
 - 오늘 운영 영역 순서: 먼저 확인할 일, 생산·출고 카드(공장·창고), 운영 상태(공장·창고·알림 카드 세 장), 기록 처리 상태(공장·창고), 데이터 조회 기록(공장·창고).
+- 운영 상태 카드 세 장에서 class meta는 맨 아래 작은 시각 글 하나에만 붙입니다. 카드의 설명 문장에는 붙이지 않습니다.
 - 화면 요소 이름(이 이름 그대로 씁니다. 창고 쪽은 factory를 warehouse로 바꾼 같은 이름): 본문 건너뛰기 링크 class skip-link(href "#main"), 로고 홈 링크 class brand, 머리 부분 오른쪽 묶음 class header-actions, 기준 시각 선택 id view-time, 조회 상태 id freshness, 새로고침 버튼 id refresh-btn, 다음 조회 글자 id countdown-text, 알림 버튼 id header-alerts-link와 그 글자 id header-alerts-text, 알림 목록 id notification-dropdown.
 - 화면 요소 이름(계속): 본문 묶음 main id main(tabindex="-1", 건너뛰기 링크가 여기로 초점을 옮김), 그 안의 본문 section id page-content, 제목 id page-title, 오늘 운영 영역 id today-view, 먼저 확인할 일 상자 class hero와 제목 id hero-title, 생산·출고 카드 묶음 class "grid kpis", 수량 줄 id factory-quantity, 달성률 글 id factory-progress-text, 진행 막대 progress 요소(max 100) id factory-progress, 목표 초과 글 id factory-exceeded, 사진 figure id factory-photo(사진 대신 글자를 넣는 칸은 class photo-placeholder), 그래프 자리 id factory-graph(안에 class loading-graph 조회 중 글자, class graph-scroll 그래프 칸), 운영 상태 카드 id factory-status·alerts-status, 기록 처리 상태 카드 id factory-flow, 조회 기록 카드 글 id factory-query와 작은 글 id factory-query-meta. 카드는 class card, 작은 회색 글은 class meta, 안내 상자는 class notice, 카드 아래 링크는 class card-link, 배지는 class badge입니다. 수량 줄(id factory-quantity) 안은 실적 글자 요소와 목표 글자 요소를 공백이나 줄바꿈 없이 붙여 쓰고, 간격은 CSS로 줍니다.
 - 상태 색은 class 네 개로 나타냅니다: good(초록), warning(노랑), danger(빨강), neutral(회색). 배지, 알림 버튼, 조회 상태 점, 먼저 확인할 일 상자가 같은 이름을 씁니다. 노란 안내 상자는 class "notice warning"입니다.
@@ -80,7 +81,7 @@
 - 조회 상태는 마지막 성공 자료, 마지막 성공 시각, 지금 오류 문장 셋으로 둡니다. 실패해도 마지막 성공 자료는 지우지 않고 화면에 남깁니다. 첫 조회부터 실패하면 빈 자료로 그려 "조회 중"이 남지 않게 합니다.
 - 응답 전(자료도 오류도 없음)에는 숫자 대신 "조회 중" 글자를 보이고 0을 보이지 않습니다. 배지에 loading을 주면 neutral "조회 중"입니다. 그동안 id page-content에 aria-busy="true"를 두고, 자료나 오류가 생기면 aria-busy="false"로 바꿉니다(속성을 지우지 않음).
 - 조회는 함수 하나(poll)로 합니다. 조회 중이면 새로 보내지 않고, 응답이 온 뒤(성공·실패 모두) 10초 뒤 조회를 예약합니다. 예약은 늘 하나이고, 새로고침 버튼은 예약을 지우고 바로 조회합니다.
-- 조회 중 새로고침 버튼은 disabled 대신 aria-disabled="true"·aria-busy="true"를 두고 class loading을 붙입니다. 조회가 끝나면 두 속성을 "false"로 바꾸고(지우지 않음) class loading을 뗍니다. 되풀이되는 Enter(event.repeat)는 막습니다.
+- 조회 중 새로고침 버튼은 disabled 대신 aria-disabled="true"·aria-busy="true"를 두고 class loading을 붙입니다. 조회 중에는 새로고침 아이콘이 1초에 한 바퀴 돌고, 움직임 줄이기 설정에서는 돌지 않습니다. 조회가 끝나면 두 속성을 "false"로 바꾸고(지우지 않음) class loading을 뗍니다. 버튼에 초점을 두고 Enter를 누르고 있어도 요청이 이어 나가지 않게, 되풀이되는 Enter(event.repeat)는 막습니다. 헤더의 새로고침 버튼으로 다시 조회하게 만들 때 이 줄을 함께 만듭니다.
 - 움직임 줄이기(prefers-reduced-motion: reduce)로 움직임을 끄는 규칙은 끄려는 규칙보다 styles.css 뒤쪽에 둡니다. 앞쪽에 있는 묶음에 넣으면 뒤의 움직임 규칙이 이깁니다.
 - 다음 조회까지의 초는 0.25초마다 글자만 고칩니다. 예약 시각이 이미 지났거나, 탭이 다시 보일 때(visibilitychange) 예약 시각이 지났으면 바로 조회합니다.
 - 조회가 실패한 동안은 알림 목록 맨 앞에 id "API-QUERY", scope "service", level "error" 항목을 더합니다(글은 프롬프트). 순서는 API-QUERY, level error, 나머지입니다.
@@ -88,8 +89,8 @@
 - 과거 시각에서는 snapshot에 at을 붙이고 자동 조회를 멈추며, 다음 조회 글자(id countdown-text)는 hidden 속성으로 숨깁니다. 현재로 돌아오면 hidden을 풉니다. 새로고침 버튼은 같은 시각으로 조회합니다. 기준 시각 안내 id view-context, 현재로 돌아가기 버튼 class inline-button, 노란 실패 안내 id data-errors입니다.
 - 조회 정보 줄은 main 맨 앞(본문 section 위)의 두 칸입니다: 마지막 조회 시각(id updated-at), 기준 시각 안내(id view-context). 앞 칸에 글이 있으면 그 뒤에 쉼표를 붙입니다.
 - "현재로 돌아가기"를 눌러도 열린 알림 목록은 닫히지 않습니다. 바깥 클릭 처리에서 눌린 요소가 그 버튼인지는 event.target.closest로 찾고, 문서에 아직 있는지(contains)나 위치로 판단하지 않습니다(버튼이 누르는 순간 다시 그려져 문서에서 떨어지기 때문).
-- 기준 시각이나 화면 주소가 바뀔 때마다 번호를 올리고, 번호가 바뀐 뒤 도착한 응답은 성공·실패 모두 버립니다. 시각을 바꾸면 이전 자료·성공 시각·오류·기록·고른 시간대를 비우고, 조회 중이면 그 조회가 끝나자마자 다시 조회합니다.
-- 기록 화면에 있으면 snapshot 조회가 성공할 때마다 기록도 따로 받고, 기록 화면으로 들어오면 조회 중이 아닐 때 바로 조회합니다. 기록 요청에도 번호를 매겨 늦게 온 응답은 버립니다.
+- 기준 시각이나 화면 주소가 바뀔 때마다 번호를 올리고, 번호가 바뀐 뒤 도착한 응답은 성공·실패 모두 화면에 쓰지 않고 버립니다. 시각을 바꾸면 이전 자료·성공 시각·오류·기록·고른 시간대를 비웁니다. 조회 중에 시각이나 주소가 바뀌면 새 요청은 바로 보내지 않고, 진행 중인 조회가 끝나자마자 10초를 기다리지 않고 새 시각(주소만 바뀌었으면 같은 시각)으로 다시 조회합니다. 기준 시각을 바꾸는 기능을 만들 때 이 줄을 함께 만듭니다.
+- 기록 화면에 있으면 snapshot 조회가 성공할 때마다 기록도 따로 받고, 기록 화면으로 들어오면 조회 중이 아닐 때 바로 조회합니다. 기록 요청에도 처음부터 번호를 매겨, 다른 화면으로 옮기거나 "시간대 조회"를 누르기 전에 보낸 기록 요청의 응답은 늦게 와도 버립니다. "시간대 조회"를 누르면 앞서 받은 표를 비워, 새 응답을 기다리는 동안 표 자리에 기록을 받기 전 안내가 보이게 합니다(이 동작은 그 버튼을 만들 때 함께 넣습니다).
 - from·to는 "시간대 조회"를 누른 값만 보냅니다(칸 글자 + "+09:00"을 toISOString()). 다른 화면으로 옮기면 고른 시간대와 받은 기록을 비웁니다. 종료가 시작보다 이르면 종료 칸에 setCustomValidity로 안내를 겁니다. 칸 값이 바뀔 때(input)와 칸을 다시 채울 때마다 다시 계산하고, 안내가 있으면 요청하지 않습니다.
 - 칸에 보일 값은 사용자가 고친 값, 없으면 "시간대 조회"로 기억한 값, 없으면 기본값(기준 시각 날짜의 00:00:00, 기준 시각)입니다. 초점이 있는 칸은 덮어쓰지 않습니다. 기준 시각은 마지막 snapshot의 viewTime, 없으면 고른 과거 시각, 없으면 브라우저 시계입니다.
 - 현장 사진은 snapshot의 sites.(현장).image.url을 고치지 않고 img의 src에 씁니다. 현장 사진 칸(figure) 안은 통째로 새로 그려도 됩니다(2회차의 "통째로 새로 그려도 되는 곳"에 더함). 주소와 alt가 지난번과 같으면 다시 만들지 않습니다. public/assets/approved의 사진은 지우지 않습니다(5회차에 다시 씁니다).
