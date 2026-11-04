@@ -1,6 +1,6 @@
 # 강사 API 연결 자료 (수강생 배포용)
 
-이 파일은 강사가 그림 파일 세 개(로고 `tumble-factory-logo.png` 1개, 현장 사진 `factory.png`·`warehouse.png` 2장)와 함께 나눠 주는 자료입니다. 수강생은 프로젝트 폴더 맨 위(`package.json` 옆)에 `API_CONTRACT.md`라는 이름으로 넣어 둡니다. 2회차부터 Antigravity에 "API_CONTRACT.md를 읽고"라고 요청할 때 이 파일을 씁니다.
+이 파일은 그림 파일 세 개(로고 `tumble-factory-logo.png` 1개, 현장 사진 `factory.png`·`warehouse.png` 2장)와 함께 수강생 저장소의 `milestone-0`부터 들어 있는 자료입니다. 프로젝트 폴더 맨 위(`package.json` 옆)에 `API_CONTRACT.md`라는 이름으로 있습니다. 2회차부터 AI 도구가 이 파일을 읽어 씁니다.
 
 ## 1. 주소와 요청
 
@@ -39,7 +39,7 @@
 | `services.alerts` | 알림 전송 결과 `status`(`sent`·`failed`), `lastAttemptAt` |
 | `incidents[]` | 확인할 일 목록. `id`, `scope`, `level`(`warning`·`error`), `title`, `owner`, `action` |
 
-화면이 쓰지 않는 필드: `sites.*.label`, `services.api`, `services.prediction`, `mode`, `sessionId`. `incidents`의 `PREDICTION-JOB`은 화면에서 뺍니다.
+화면이 쓰지 않는 필드: `services.api`, `services.prediction`, `mode`, `sessionId`. `incidents`의 `PREDICTION-JOB`은 화면에서 뺍니다.
 
 ## 3. records 필드
 
@@ -148,7 +148,7 @@ records. 앞 문장은 "기록 응답 형식이 올바르지 않습니다."
 }
 ```
 
-## 6. 예시 기록 (3회차 연습용)
+## 6. 예시 기록 (2·3회차 연습용)
 
 ```json
 {
@@ -167,7 +167,7 @@ records. 앞 문장은 "기록 응답 형식이 올바르지 않습니다."
 }
 ```
 
-## 7. 시험용 사건 (3회차 알림 연습용)
+## 7. 시험용 사건 (2·3회차 알림 연습용)
 
 `incidents` 배열에 하나씩 넣어 보고, 확인한 뒤 빈 배열로 되돌립니다.
 
