@@ -36,6 +36,8 @@
 
 4-14와 4-30은 파일을 고치지 않고 답만 합니다.
 
+4-30에서 원인을 설명할 때는 오류 줄이 가리키는 곳만 말합니다. 다른 값이 처음 만든 값과 다른지는 추측하지 않습니다. 시드 수량은 서버를 켠 시각에 따라 다릅니다.
+
 ## 앞 회차에서 바뀌는 것
 
 - 1회차 문서의 package.json scripts는 `start` 하나였습니다. 4-3에서 `check`를 더합니다.
@@ -47,17 +49,42 @@
 
 1단계 정리는 쓰지 않는 코드, 문법 검사, 시험용 응답, README, 되돌리기입니다. 시험용 응답 파일로 강사 API로는 볼 수 없는 실패 두 가지(정상 응답 안에 든 오류, JSON이 아닌 응답)를 내 PC에서 봅니다. 5회차 GAS에서 실제로 나올 수 있는 모양입니다.
 
-### 약속
+### 약속: 4-1, 4-2에서 찾고 지우는 것
 
-- 쓰지 않는 것을 찾을 때는 더 쓰지 않는 파일과 어디서도 부르지 않는 함수·변수를 찾되, 검증표·강사가 준 파일·README·그림은 뺍니다. 연결 설정 파일이 네 줄인지(3회차 문서의 약속), 화면이 그 파일을 먼저 읽는지도 함께 알립니다.
+- 쓰지 않는 것을 찾을 때는 더 쓰지 않는 파일과 어디서도 부르지 않는 함수·변수를 찾되, 검증표·강사가 준 파일·README·그림은 뺍니다.
+- 연결 설정 파일이 네 줄인지(3회차 문서의 약속), 화면이 그 파일을 먼저 읽는지도 함께 알립니다.
 - 지울 때는 화면 동작에 쓰이지 않는 것만 지우고 화면 동작은 바꾸지 않습니다.
-- 1단계 정리: package.json scripts에 "check": "node --check public/app.js && node --check public/config.js && node --check scripts/serve.mjs"를 더합니다.
-- 시험용 응답 파일(확장자 없음): public/test/error/api/v1/snapshot 내용 {"error":"시험용 오류입니다."}, public/test/not-json/api/v1/snapshot 내용은 JSON이 아닌 글 한 줄(예: 시험용 글자입니다)입니다. public/test 폴더는 사용자가 지우라고 할 때 지웁니다.
-- 프롬프트에서 프로젝트 소개 글이라고 하면 맨 위 `README.md`입니다.
-- README.md 끝에 "실행", "검사", "화면 주소", "단계별 public/config.js 값" 절을 더합니다. 단계별 값은 API_CONTRACT.md 9절 표와 같고 3단계 주소는 "<GAS 웹앱 주소>" 그대로 둡니다. 웹 앱 주소를 받아도 README에 옮겨 적지 않습니다(5회차 배포 명령이 public/config.js에 씁니다).
+
+### 약속: 4-3에 더하는 문법 검사 명령
+
+`package.json`의 scripts에 이 줄을 더합니다.
+
+```json
+"check": "node --check public/app.js && node --check public/config.js && node --check scripts/serve.mjs"
+```
+
+### 약속: 4-4에 만드는 시험용 응답 파일
+
+파일 두 개 모두 확장자가 없습니다. `public/test` 폴더는 사용자가 지우라고 할 때 지웁니다.
+
+| 파일 | 내용 |
+|---|---|
+| `public/test/error/api/v1/snapshot` | `{"error":"시험용 오류입니다."}` |
+| `public/test/not-json/api/v1/snapshot` | JSON이 아닌 글 한 줄(예: 시험용 글자입니다) |
+
+### 약속: 4-6에 더하는 README 절
+
+프롬프트에서 프로젝트 소개 글이라고 하면 맨 위 `README.md`입니다.
+
+- `README.md` 끝에 "실행", "검사", "화면 주소", "단계별 public/config.js 값" 절을 더합니다.
 - 실행 절에는 Windows와 macOS 명령, 여는 주소, 멈추는 방법을 적고 화면 주소 다섯 개는 표로 씁니다.
+- 단계별 값은 `API_CONTRACT.md` 9절 표와 같고 3단계 주소는 "<GAS 웹앱 주소>" 그대로 둡니다.
 - 단계별 값 표 아래에는 단계를 바꿀 때는 두 값만 바꾸고, 3단계 주소는 여기 적지 않으며 5회차 배포 명령이 연결 설정 파일에 쓴다는 안내를 한 줄 넣습니다.
-- 1단계 값은 `API_CONTRACT.md` 9절 표의 값입니다.
+- 웹 앱 주소를 받아도 README에 옮겨 적지 않습니다(5회차 배포 명령이 `public/config.js`에 씁니다).
+
+### 약속: 4-7에 확인하는 1단계 값
+
+1단계 값은 `API_CONTRACT.md` 9절 표의 값입니다.
 
 ## 내 서버의 구성
 
@@ -67,43 +94,109 @@
 
 ### 약속: 4-8에 만드는 파일
 
-- 내 서버는 backend 폴더의 NestJS(TypeScript)입니다. nest new나 npm init을 쓰지 않고 파일을 직접 만듭니다. 화면 코드는 고치지 않고, 마지막에 public/config.js의 apiBaseUrl만 "http://127.0.0.1:3000"으로 바꿉니다(timeoutMs 5000 그대로).
-- backend/package.json: name "aiops-dashboard-student-api", version "1.0.0", private true, description "학생용 텀블러 생산·출고 교육 API", engines node ">=22", scripts build "tsc -p tsconfig.json", start "node dist/main.js", start:local "node --env-file=.env dist/main.js".
-- 패키지는 이것만, 버전 앞에 ^·~ 없이 씁니다: dependencies @nestjs/common 11.2.7, @nestjs/core 11.2.7, @nestjs/platform-express 11.2.7, reflect-metadata 0.2.2, rxjs 7.8.2 / devDependencies @types/node 24.4.0, typescript 5.9.3.
-- backend/tsconfig.json: target ES2022, module CommonJS, moduleResolution Node, lib ["ES2022", "DOM"], outDir dist, rootDir src, include ["src/**/*.ts"], strict·skipLibCheck·esModuleInterop·experimentalDecorators·emitDecoratorMetadata·forceConsistentCasingInFileNames true. backend/.gitignore는 node_modules/, dist/, var/, .env 네 줄입니다.
+내 서버는 `backend` 폴더의 NestJS(TypeScript)입니다. `nest new`나 `npm init`을 쓰지 않고 파일을 직접 만듭니다. 화면 코드는 고치지 않고, 마지막에 `public/config.js`의 `apiBaseUrl`만 "http://127.0.0.1:3000"으로 바꿉니다(`timeoutMs` `5000` 그대로).
+
+`backend/package.json`의 값입니다.
+
+| 키 | 값 |
+|---|---|
+| name | "aiops-dashboard-student-api" |
+| version | "1.0.0" |
+| private | true |
+| description | "학생용 텀블러 생산·출고 교육 API" |
+| engines | node ">=22" |
+| scripts | build "tsc -p tsconfig.json", start "node dist/main.js", start:local "node --env-file=.env dist/main.js" |
+
+패키지는 이것만, 버전 앞에 `^`·`~` 없이 씁니다.
+
+| 구분 | 패키지와 버전 |
+|---|---|
+| dependencies | `@nestjs/common` 11.2.7, `@nestjs/core` 11.2.7, `@nestjs/platform-express` 11.2.7, `reflect-metadata` 0.2.2, `rxjs` 7.8.2 |
+| devDependencies | `@types/node` 24.4.0, `typescript` 5.9.3 |
+
+`backend/tsconfig.json`의 값입니다.
+
+| 옵션 | 값 |
+|---|---|
+| target | ES2022 |
+| module | CommonJS |
+| moduleResolution | Node |
+| lib | ["ES2022", "DOM"] |
+| outDir | dist |
+| rootDir | src |
+| include | ["src/**/*.ts"] |
+| strict·skipLibCheck·esModuleInterop·experimentalDecorators·emitDecoratorMetadata·forceConsistentCasingInFileNames | true |
+
+`backend/.gitignore`는 `node_modules/`, `dist/`, `var/`, `.env` 네 줄입니다.
 
 ### 약속: 4-10에 만드는 시작 파일
 
-- src/main.ts 첫 줄은 import "reflect-metadata";입니다. CORS는 origin "*", methods ["GET"], credentials false입니다. 포트는 PORT, 없으면 3000(1~65535 정수가 아니면 "PORT 값이 잘못되었습니다." 오류), 주소는 HOST, 없으면 127.0.0.1입니다. 전역 주소 접두어·검증 파이프·예외 필터·환경 설정 패키지는 넣지 않습니다.
+`src/main.ts` 첫 줄은 `import "reflect-metadata";`입니다.
+
+| 항목 | 값 |
+|---|---|
+| CORS | origin "*", methods ["GET"], credentials false |
+| 포트 | PORT, 없으면 3000(1~65535 정수가 아니면 "PORT 값이 잘못되었습니다." 오류) |
+| 주소 | HOST, 없으면 127.0.0.1 |
+
+- 전역 주소 접두어·검증 파이프·예외 필터·환경 설정 패키지는 넣지 않습니다.
 - listen 뒤에 주소 줄을 따로 찍지 않습니다. 서버 창의 마지막 줄은 Nest가 찍는 `Nest application successfully started`입니다.
 
 ## 주소와 응답
 
 쓰는 단계: 4-10, 4-17, 4-19, 4-24
 
-주소 네 개는 한 번에 만들지 않고 프롬프트마다 하나씩 더합니다. 상태 확인은 4-10, 기록 목록은 4-17, 오늘 운영 자료는 4-19, 현장 사진은 4-24입니다. 서버 창에는 켤 때의 줄과 오류 줄만 나오고 요청마다 줄이 남지 않습니다.
+주소 네 개는 한 번에 만들지 않고 프롬프트마다 하나씩 더합니다. 서버 창에는 켤 때의 줄과 오류 줄만 나오고 요청마다 줄이 남지 않습니다.
 
 ### 약속
 
-- 주소는 GET 네 개입니다: /api/v1/health(상태 확인), /api/v1/snapshot(오늘 운영 자료), /api/v1/records(기록 목록), /api/v1/images/:id(현장 사진). images 말고는 응답 헤더 Cache-Control: no-store를 붙입니다. health는 { status: "ok", releaseId: 환경 변수 RELEASE_ID, 없으면 "local" }입니다.
-- 응답 모양은 API_CONTRACT.md 2·3·5절과 같습니다. 잘못된 요청은 NestJS 기본 400 모양({"message": 문장, "error": "Bad Request", "statusCode": 400})이고, 정하지 않은 주소는 NestJS 기본 404입니다. 예외 필터는 만들지 않습니다.
+주소는 GET 네 개입니다.
+
+| 주소 | 뜻 | 더하는 프롬프트 |
+|---|---|---|
+| `/api/v1/health` | 상태 확인 | 4-10 |
+| `/api/v1/snapshot` | 오늘 운영 자료 | 4-19 |
+| `/api/v1/records` | 기록 목록 | 4-17 |
+| `/api/v1/images/:id` | 현장 사진 | 4-24 |
+
+- images 말고는 응답 헤더 `Cache-Control: no-store`를 붙입니다.
+- health는 { status: "ok", releaseId: 환경 변수 `RELEASE_ID`, 없으면 "local" }입니다.
+- 응답 모양은 `API_CONTRACT.md` 2·3·5절과 같습니다.
+- 잘못된 요청은 NestJS 기본 400 모양({"message": 문장, "error": "Bad Request", "statusCode": 400})이고, 정하지 않은 주소는 NestJS 기본 404입니다. 예외 필터는 만들지 않습니다.
 
 ## 상태 파일
 
 쓰는 단계: 4-12, 4-15
 
-상태 파일 내용이 잘못됐으면 서버가 켜지지 않고 이유를 서버 창에 남기게 합니다. 잘못된 파일은 고치거나 지우지 않습니다.
+시드 기록을 담아 두는 파일입니다. 4-12에서 저장을 만들고 4-15에서 검사를 더합니다. 내용이 잘못됐을 때는 이유를 서버 창에 남기게 합니다.
 
 ### 약속: 4-12에 만드는 저장
 
-- 상태 파일은 환경 변수 STATE_FILE, 없으면 서버를 켠 폴더 기준 ./var/state.json입니다. 없으면 처음 켤 때 폴더와 함께 만들고, 있으면 읽은 내용을 그대로 씁니다. 저장은 2칸 들여쓴 JSON 끝에 줄바꿈을 붙여 같은 이름 + ".next"에 쓴 뒤 이름을 바꿔 옮깁니다.
-- 상태 파일 맨 위 키는 sessionId("lesson-" + 만든 시각 ISO + "-1"), records, scenarioId("normal"), revision(1), changedAt(만든 시각)입니다. 화면이 쓰지 않는 예측 상태(services.prediction)와 그 이력은 만들지 않아도 됩니다.
+- 상태 파일은 환경 변수 `STATE_FILE`, 없으면 서버를 켠 폴더 기준 `./var/state.json`입니다.
+- 없으면 처음 켤 때 폴더와 함께 만들고, 있으면 읽은 내용을 그대로 씁니다.
+- 저장은 2칸 들여쓴 JSON 끝에 줄바꿈을 붙여 같은 이름 + ".next"에 쓴 뒤 이름을 바꿔 옮깁니다.
+- 화면이 쓰지 않는 예측 상태(`services.prediction`)와 그 이력은 만들지 않아도 됩니다.
+
+상태 파일 맨 위 키입니다.
+
+| 키 | 값 |
+|---|---|
+| sessionId | "lesson-" + 만든 시각 ISO + "-1" |
+| records | '기록과 시드 기록' 절의 기록 |
+| scenarioId | "normal" |
+| revision | 1 |
+| changedAt | 만든 시각 |
 
 ### 약속: 4-15에 만드는 검사
 
-- 상태 파일이 잘못되면 파일을 고치거나 지우지 않고 오류를 내서 서버가 켜지지 않게 합니다. scenarioId가 "normal"이 아니거나 revision이 1 이상 정수가 아니거나 changedAt이 시각이 아니면 "STATE_FILE 내용이 잘못되었습니다. 기존 파일을 보존하고 확인해 주세요.", 기록이 틀리거나 id가 겹치면 "저장된 기록을 확인해 주세요."입니다.
-- 상태 파일 검사는 기본 칸을 먼저, 기록을 그다음에 합니다. 기본 칸은 scenarioId, revision, changedAt이고 기록은 '기록과 시드 기록' 절의 기록 한 건 약속으로 검사합니다.
-- JSON 문법이 틀린 파일은 JSON.parse의 SyntaxError를 잡지 않고 그대로 내보냅니다. 서버 창에 `SyntaxError: …in JSON at position …`이 나오고 서버가 끝납니다.
+상태 파일이 잘못되면 파일을 고치거나 지우지 않고 오류를 내서 서버가 켜지지 않게 합니다. 기본 칸을 먼저, 기록을 그다음에 검사합니다.
+
+| 검사 | 잘못된 경우 | 오류 문장 |
+|---|---|---|
+| 기본 칸 | `scenarioId`가 "normal"이 아니거나 `revision`이 1 이상 정수가 아니거나 `changedAt`이 시각이 아니면 | "STATE_FILE 내용이 잘못되었습니다. 기존 파일을 보존하고 확인해 주세요." |
+| 기록 | 기록이 틀리거나 id가 겹치면. '기록과 시드 기록' 절의 기록 한 건 약속으로 검사합니다 | "저장된 기록을 확인해 주세요." |
+
+- JSON 문법이 틀린 파일은 `JSON.parse`의 `SyntaxError`를 잡지 않고 그대로 내보냅니다. 서버 창에 `SyntaxError: …in JSON at position …`이 나오고 서버가 끝납니다.
 - 원인을 물어볼 때 서버 코드에 오류 처리를 더하거나 화면 코드를 고치지 않습니다. 이 서버는 상태 파일이 잘못되면 켜지지 않게 정해져 있습니다.
 
 ## 기록과 시드 기록
@@ -112,24 +205,59 @@
 
 서버를 처음 켤 때 오늘 0시부터 켠 시각까지의 기록을 만들어 둡니다. 이 기록을 시드 기록이라고 부릅니다. 기록 한 건의 약속은 4-12에서 모양을 만들 때와 4-15에서 저장된 기록을 검사할 때 함께 씁니다.
 
-### 약속
+### 약속: 기록 한 건
 
-- 기록 한 건은 id(영문·숫자·_·- 1~100자), kind("production"·"shipment"), quantity(1 이상 정수), occurredAt, receivedAt, processedAt(없으면 null) 순서의 키입니다. 시각은 Z로 끝나는 ISO 글자이고 발생 ≤ 접수 ≤ 처리, 처리가 있으면 접수도 있습니다.
+- 기록 한 건은 `id`(영문·숫자·`_`·`-` 1~100자), `kind`("production"·"shipment"), `quantity`(1 이상 정수), `occurredAt`, `receivedAt`, `processedAt`(없으면 null) 순서의 키입니다.
+- 시각은 `Z`로 끝나는 ISO 글자이고 발생 ≤ 접수 ≤ 처리, 처리가 있으면 접수도 있습니다.
 - 시각을 받아 한국 시간 날짜("2026-11-09" 꼴)로 바꾸는 도구도 함께 둡니다.
-- 시드 기록(상태 파일을 만들 때): 오늘 한국 0시부터 지금보다 2분 이른 시각까지를 같은 간격 점으로 나눕니다(점 개수 = 올림(구간 ÷ 20분) + 1, 첫 점 0시, 마지막 점 구간 끝). 생산을 모두 만든 뒤 출고를 잇습니다.
-- 시드 수량은 생산 합계 100, 출고 합계 75를 점 개수로 나눈 몫이고 나머지는 앞 기록부터 1씩 더합니다. id는 "seed-production-0"…, "seed-shipment-0"…입니다. 생산 발생은 점 그대로, 출고 발생은 점보다 1초 뒤이고, 두 종류 모두 접수는 발생 2초 뒤, 처리는 접수 3초 뒤입니다. 어느 시각도 지금보다 늦지 않습니다.
+
+### 약속: 시드 기록
+
+시드 기록은 상태 파일을 만들 때 만듭니다.
+
+- 오늘 한국 0시부터 지금보다 2분 이른 시각까지를 같은 간격 점으로 나눕니다. 점 개수 = 올림(구간 ÷ 20분) + 1이고, 첫 점은 0시, 마지막 점은 구간 끝입니다.
+- 생산을 모두 만든 뒤 출고를 잇습니다.
+- 수량은 합계를 점 개수로 나눈 몫이고 나머지는 앞 기록부터 1씩 더합니다.
+- 어느 시각도 지금보다 늦지 않습니다.
+
+| 항목 | 생산 | 출고 |
+|---|---|---|
+| 수량 합계 | 100 | 75 |
+| id | "seed-production-0"… | "seed-shipment-0"… |
+| 발생 | 점 그대로 | 점보다 1초 뒤 |
+| 접수 | 발생 2초 뒤 | 발생 2초 뒤 |
+| 처리 | 접수 3초 뒤 | 접수 3초 뒤 |
 
 ## 기준 시각과 기록 목록
 
 쓰는 단계: 4-17
 
-기록 화면(`#/records/factory`, `#/records/warehouse`)이 읽는 기록 목록을 만듭니다.
+기록 화면(`#/records/factory`, `#/records/warehouse`)이 읽는 기록 목록을 만듭니다. 아래는 기준 시각, 기록 목록의 검사, 기록 목록의 결과로 나눠 적었습니다.
 
-### 약속
+### 약속: 기준 시각
 
-- 기준 시각 at(없으면 지금)은 "2026-11-09T"처럼 날짜와 T로 시작하고 끝이 Z나 +09:00 꼴이며, 시각으로 읽히고, 지금 이전이고, 한국 날짜가 오늘이어야 합니다. 아니면 400 "오늘의 현재 이전 시각을 선택해 주세요."입니다. at=처럼 값이 빈 at은 없는 것이 아니라 이 400입니다. 통과하면 Z로 끝나는 ISO로 바꿔 씁니다.
-- records는 kind가 production·shipment가 아니면 시각을 보기 전에 400 "생산 또는 출고 기록을 선택해 주세요."입니다. from(없으면 기준 날짜 한국 0시)·to(없으면 기준 시각, from=·to=처럼 값이 비어도 없는 것으로 봄)는 Z나 +09:00 꼴이고 기준 날짜와 같은 한국 날짜이며 from ≤ to ≤ 기준 시각이어야 하고, 아니면 400 "조회 시간 구간을 확인해 주세요."입니다.
-- records 결과는 { sessionId, viewTime(기준 시각), records }입니다. 그 kind이고 발생 시각이 from~to(양 끝 포함)인 기록을 발생 시각 순으로 담습니다. 기준 시각보다 늦은 접수·처리 시각은 null로 바꾸고 status를 더합니다(처리가 있으면 completed, 접수만 있으면 processing-wait, 둘 다 없으면 receipt-wait). 시각은 글자가 아니라 숫자로 바꿔 비교합니다.
+기준 시각 `at`(없으면 지금)은 아래를 모두 지켜야 합니다.
+
+- "2026-11-09T"처럼 날짜와 `T`로 시작하고 끝이 `Z`나 `+09:00` 꼴입니다.
+- 시각으로 읽힙니다.
+- 지금 이전입니다.
+- 한국 날짜가 오늘입니다.
+
+아니면 400 "오늘의 현재 이전 시각을 선택해 주세요."입니다. `at=`처럼 값이 빈 `at`은 없는 것이 아니라 이 400입니다. 통과하면 `Z`로 끝나는 ISO로 바꿔 씁니다.
+
+### 약속: 기록 목록의 검사
+
+- `records`는 `kind`가 `production`·`shipment`가 아니면 시각을 보기 전에 400 "생산 또는 출고 기록을 선택해 주세요."입니다.
+- `from`은 없으면 기준 날짜 한국 0시이고, `to`는 없으면 기준 시각입니다. `from=`·`to=`처럼 값이 비어도 없는 것으로 봅니다.
+- `from`·`to`는 `Z`나 `+09:00` 꼴이고 기준 날짜와 같은 한국 날짜이며 `from` ≤ `to` ≤ 기준 시각이어야 하고, 아니면 400 "조회 시간 구간을 확인해 주세요."입니다.
+
+### 약속: 기록 목록의 결과
+
+결과는 { `sessionId`, `viewTime`(기준 시각), `records` }입니다.
+
+- 그 `kind`이고 발생 시각이 `from`~`to`(양 끝 포함)인 기록을 발생 시각 순으로 담습니다.
+- 기준 시각보다 늦은 접수·처리 시각은 null로 바꾸고 `status`를 더합니다. 처리가 있으면 `completed`, 접수만 있으면 `processing-wait`, 둘 다 없으면 `receipt-wait`입니다.
+- 시각은 글자가 아니라 숫자로 바꿔 비교합니다.
 - 저장된 기록 자체는 바꾸지 않습니다.
 - 기준 시각 검사와 기록 고르기, 기준 시각 뒤의 시각 가리기는 오늘 운영 자료에서도 다시 쓰도록 따로 둡니다.
 
@@ -141,30 +269,77 @@
 
 ### 약속: 4-19에 만드는 모양
 
-- snapshot은 schemaVersion 1, scenarioId, revision, changedAt(상태 파일 값, 단 기준 시각보다 늦으면 기준 시각), serverTime(지금), trainingOnly true, sites, services, incidents 뒤에 viewTime(기준 시각), mode(at이 없으면 "current", 있으면 "past"), sessionId를 붙입니다.
-- sites.factory는 label "텀블공장", target 120, 생산 기록이고 sites.warehouse는 label "물류창고", target 100, 출고 기록입니다.
-- 4-19에서는 두 현장에 이름과 목표만 넣고 수량과 시각은 비워 둡니다(`null`). 4-21에서 채웁니다.
-- services는 api { status: "normal", note: "조회 서비스가 정상입니다." }, alerts { status: "sent", lastAttemptAt: 그 snapshot의 changedAt보다 1분 이른 시각, note: "모의 전송 성공 기록입니다. 실제 알림을 보내지 않았습니다." }입니다.
+`snapshot`의 키입니다.
+
+- `schemaVersion` 1, `scenarioId`, `revision`, `changedAt`(상태 파일 값, 단 기준 시각보다 늦으면 기준 시각), `serverTime`(지금), `trainingOnly` true, `sites`, `services`, `incidents`
+- `incidents` 뒤에 `viewTime`(기준 시각), `mode`(`at`이 없으면 "current", 있으면 "past"), `sessionId`를 붙입니다.
+
+두 현장의 이름과 목표입니다. 4-19에서는 두 현장에 이름과 목표만 넣고 수량과 시각은 비워 둡니다(`null`). 4-21에서 채웁니다.
+
+| 현장 | label | target | 쓰는 기록 |
+|---|---|---|---|
+| `sites.factory` | "텀블공장" | 120 | 생산 기록 |
+| `sites.warehouse` | "물류창고" | 100 | 출고 기록 |
+
+`services`의 값입니다.
+
+| 서비스 | status | 나머지 |
+|---|---|---|
+| api | "normal" | note: "조회 서비스가 정상입니다." |
+| alerts | "sent" | lastAttemptAt: 그 snapshot의 `changedAt`보다 1분 이른 시각, note: "모의 전송 성공 기록입니다. 실제 알림을 보내지 않았습니다." |
 
 ### 약속: 4-21에 채우는 현장 값
 
 이 서버는 켠 뒤로 기록이 늘지 않습니다. 마지막 시드 기록이 처음 켠 시각의 2분 전이므로, 처음 켠 지 28분이 지나면 "기록이 30분 넘게 들어오지 않았습니다." 경고가 나오는 것이 맞습니다.
 
-- completed는 발생 시각의 한국 날짜가 기준 날짜와 같고 처리 시각이 기준 시각 이전인 기록의 수량 합이며, 합이 0이면 null입니다.
-- lastEventAt·receivedAt·processedAt은 0시~기준 시각 기록 목록(records와 같은 계산)의 마지막 기록 값(없으면 null)이고, processingState는 그 마지막 기록에 처리 시각이 있으면 "completed", 아니면 "waiting"입니다.
-- history는 같은 목록에서 처리 시각이 있는 기록을 발생 시각의 UTC 정시(ISO)별로 더한 { timestamp, quantity } 배열(시각 순)입니다. image는 { url: (PUBLIC_BASE_URL 끝 / 뗀 값, 없으면 "http://127.0.0.1:" + (PORT 또는 3000)) + "/api/v1/images/factory"(창고 warehouse), alt: "생산 라인 참고 사진"(창고 "물류창고 참고 사진") }입니다.
-- 현장 status는 마지막 기록이 없거나, 기준 시각이 마지막 발생보다 30분 넘게 늦거나, processingState가 completed가 아니면 "warning", 아니면 "normal"입니다. note는 normal이면 "기록이 반영되고 있습니다."입니다. warning이면 마지막 기록이 없으면 label + "의 기록이 없습니다.", 마지막 기록에 처리 시각이 없으면 label + " 기록 처리를 기다리고 있습니다.", 30분 넘게 늦으면 label + " 기록이 30분 넘게 들어오지 않았습니다." 순서로 먼저 맞는 것 하나입니다.
-- warning 현장마다 incidents에 { id: "FACTORY-FEED"(창고 "WAREHOUSE-FEED"), scope: "factory"(창고 "warehouse"), level: "warning", title: 그 note, owner: "공장 데이터 담당자"(창고 "창고 데이터 담당자"), action: "기록 수집과 처리 상태를 확인해 주세요." }를 넣습니다.
+수량과 시각입니다.
+
+- `completed`는 발생 시각의 한국 날짜가 기준 날짜와 같고 처리 시각이 기준 시각 이전인 기록의 수량 합이며, 합이 0이면 null입니다.
+- `lastEventAt`·`receivedAt`·`processedAt`은 0시~기준 시각 기록 목록(`records`와 같은 계산)의 마지막 기록 값(없으면 null)입니다.
+- `processingState`는 그 마지막 기록에 처리 시각이 있으면 "completed", 아니면 "waiting"입니다.
+
+그래프와 사진입니다.
+
+- `history`는 같은 목록(0시~기준 시각 기록 목록)에서 처리 시각이 있는 기록을 발생 시각의 UTC 정시(ISO)별로 더한 { `timestamp`, `quantity` } 배열(시각 순)입니다.
+- `image`는 { url: (PUBLIC_BASE_URL 끝 / 뗀 값, 없으면 "http://127.0.0.1:" + (PORT 또는 3000)) + "/api/v1/images/factory"(창고 warehouse), alt: "생산 라인 참고 사진"(창고 "물류창고 참고 사진") }입니다.
+
+현장 상태입니다. `status`는 아래 가운데 하나라도 맞으면 "warning", 아니면 "normal"입니다.
+
+- 마지막 기록이 없습니다.
+- 기준 시각이 마지막 발생보다 30분 넘게 늦습니다.
+- `processingState`가 `completed`가 아닙니다.
+
+`note`는 normal이면 "기록이 반영되고 있습니다."입니다. warning이면 아래 순서로 먼저 맞는 것 하나입니다.
+
+| 순서 | 조건 | note |
+|---|---|---|
+| 1 | 마지막 기록이 없으면 | label + "의 기록이 없습니다." |
+| 2 | 마지막 기록에 처리 시각이 없으면 | label + " 기록 처리를 기다리고 있습니다." |
+| 3 | 30분 넘게 늦으면 | label + " 기록이 30분 넘게 들어오지 않았습니다." |
+
+warning 현장마다 `incidents`에 아래 값으로 된 항목을 넣습니다.
+
+| 키 | 공장 | 창고 |
+|---|---|---|
+| id | "FACTORY-FEED" | "WAREHOUSE-FEED" |
+| scope | "factory" | "warehouse" |
+| level | "warning" | 공장과 같음 |
+| title | 그 note | 그 note |
+| owner | "공장 데이터 담당자" | "창고 데이터 담당자" |
+| action | "기록 수집과 처리 상태를 확인해 주세요." | 공장과 같음 |
 
 ## 현장 사진
 
 쓰는 단계: 4-24
 
-사진 파일은 사용자가 4-23에서 복사해 둡니다.
+4-23에서 복사해 둔 사진 파일을 보내는 주소입니다.
 
 ### 약속
 
-- images는 id가 factory나 warehouse면 backend/assets/(id).png를 Content-Type image/png로 보냅니다(빌드된 dist 폴더 기준 ../assets). 다른 id는 문장 없이 NestJS 기본 404입니다. 사진은 사용자가 public/assets/approved에서 backend/assets로 복사해 둡니다. 파일은 StreamableFile(createReadStream)로 보내고 res.sendFile은 쓰지 않습니다.
+- `images`는 id가 factory나 warehouse면 backend/assets/(id).png를 Content-Type `image/png`로 보냅니다(빌드된 dist 폴더 기준 ../assets).
+- 다른 id는 문장 없이 NestJS 기본 404입니다.
+- 사진은 사용자가 `public/assets/approved`에서 `backend/assets`로 복사해 둡니다.
+- 파일은 `StreamableFile`(`createReadStream`)로 보내고 `res.sendFile`은 쓰지 않습니다.
 - 사진 파일은 열거나 바꾸지 않습니다.
 
 ## 기록을 다시 만들 때
@@ -175,7 +350,7 @@
 
 ### 약속
 
-- 이 서버에는 기록을 더하는 기능이 없습니다. 기록을 지금 기준으로 다시 만들 때는 사용자가 서버를 끄고 backend/var/state.json을 지운 뒤 다시 켭니다.
+이 서버에는 기록을 더하는 기능이 없습니다. 기록을 지금 기준으로 다시 만들 때는 사용자가 서버를 끄고 `backend/var/state.json`을 지운 뒤 다시 켭니다.
 
 ## 사용자가 직접 하는 일
 

@@ -30,16 +30,16 @@
 | 프롬프트의 말 | 실제 이름 |
 |---|---|
 | Google 쪽 코드 | `gas/Code.gs` |
-| 잠금 도구 | `withLock_` |
-| Discord로 알림을 보내는 도구 | `sendAlert_` |
+| 잠금 | `withLock_` |
+| Discord 시험 채널로 알림을 보내는 기능 | `sendAlert_` |
 | 알림 시험 함수 | `testDiscordAlert` |
-| 설정 이력 끝에 남기는 도구 | `rememberSettings_` |
-| 한 줄 처리, 앞부분·입력 검사·끝부분 | `processRow_` |
-| 모든 기록 처리 함수 | `processPendingRecords` |
-| 데모 생산 기록 함수 | `addDemoProductionRecord` |
-| 시트를 고치면 바로 처리하는 함수 | `onEditInstalled` |
-| 늦은 기록을 알리는 함수 | `checkRecordDelays` |
-| 자동 실행 설치 함수 | `installTrainingTriggers` |
+| 설정 이력 끝에 한 번 더 남기는 기능 | `rememberSettings_` |
+| 기록 탭의 한 줄을 접수하고 처리하는 기능(한 줄 처리), 앞부분·입력 검사·끝부분 | `processRow_` |
+| 두 탭의 모든 줄을 처리하는 함수 | `processPendingRecords` |
+| 생산 기록 탭 끝에 기록 한 줄을 더하고 바로 처리하는 함수 | `addDemoProductionRecord` |
+| 시트를 고치면 고친 기록 줄을 바로 처리하는 함수 | `onEditInstalled` |
+| 확인할 일이 있으면 Discord로 알리는 함수 | `checkRecordDelays` |
+| 두 함수의 자동 실행(트리거)을 만드는 함수 | `installTrainingTriggers` |
 
 ## 코드를 두는 곳과 올리는 법
 
@@ -47,7 +47,8 @@
 
 ### 약속
 
-- 이번 회차 함수는 모두 gas/Code.gs 끝에 더합니다. 웹 앱 입구(doGet)는 바꾸지 않으므로 사용자는 gas:push만 하고 gas:redeploy는 하지 않습니다.
+- 이번 회차 함수는 모두 `gas/Code.gs` 끝에 더합니다.
+- 웹 앱 입구(`doGet`)는 바꾸지 않으므로 사용자는 `gas:push`만 하고 `gas:redeploy`는 하지 않습니다.
 
 ## 함수 이름
 
@@ -57,7 +58,8 @@
 
 ### 약속
 
-- 사용자가 편집기에서 고르는 함수(이름 끝에 _ 없음): testDiscordAlert, processPendingRecords, addDemoProductionRecord, installTrainingTriggers. 트리거가 부르는 함수: onEditInstalled, checkRecordDelays.
+- 사용자가 편집기에서 고르는 함수(이름 끝에 _ 없음): `testDiscordAlert`, `processPendingRecords`, `addDemoProductionRecord`, `installTrainingTriggers`.
+- 트리거가 부르는 함수: `onEditInstalled`, `checkRecordDelays`.
 
 ## 잠금
 
@@ -65,20 +67,30 @@
 
 시트에 쓰는 일이 동시에 두 개 실행되면 같은 줄을 겹쳐 쓸 수 있습니다. 한 번에 하나만 실행되게 합니다.
 
-이 도구는 6-1에서 만듭니다. `testDiscordAlert`, `processPendingRecords`, `addDemoProductionRecord`, `checkRecordDelays`는 만들 때 본문 전체를 이 안에서 실행합니다. `onEditInstalled`는 첫 검사(`e`, `e.range`, 시트 ID)를 통과한 뒤의 일을 모두 이 안에서 실행합니다. `sendAlert_`, `rememberSettings_`, `processRow_`는 이 함수들 안에서 불리므로 따로 잠그지 않습니다. `installTrainingTriggers`는 시트에 쓰지 않아 이 안에 넣지 않습니다.
+이 잠금은 6-1에서 만듭니다. `testDiscordAlert`, `processPendingRecords`, `addDemoProductionRecord`, `checkRecordDelays`는 만들 때 본문 전체를 이 안에서 실행합니다. `onEditInstalled`는 첫 검사(`e`, `e.range`, 시트 ID)를 통과한 뒤의 일을 모두 이 안에서 실행합니다. `sendAlert_`, `rememberSettings_`, `processRow_`는 이 함수들 안에서 불리므로 따로 잠그지 않습니다. `installTrainingTriggers`는 시트에 쓰지 않아 이 안에 넣지 않습니다. 5회차의 `createTrainingSpreadsheet`는 고치지 않습니다.
 
 ### 약속
 
-- withLock_(fn): LockService.getScriptLock()으로 최대 20000밀리초 기다려 잠그고 fn()의 값을 돌려주며, 오류가 나도 끝나면 잠금을 풉니다. 시트에 쓰는 편집기 함수와 트리거 함수는 모두 이 안에서 실행합니다.
+- `withLock_(fn)`: `LockService.getScriptLock()`으로 최대 20000밀리초 기다려 잠그고 `fn()`의 값을 돌려주며, 오류가 나도 끝나면 잠금을 풉니다.
+- 시트에 쓰는 편집기 함수와 트리거 함수는 모두 이 안에서 실행합니다.
 
 ## Discord 알림 보내기
 
 쓰는 단계: 6-2
 
+웹훅 주소와 보내다가 난 오류의 내용은 로그와 시트에 남기지 않습니다. 상세 칸에는 '보낸 결과 남기기' 표의 글만 씁니다.
+
 ### 약속
 
-- sendAlert_(key, message): 같은 key는 설정 cooldown_minutes분 안에 다시 보내지 않습니다. 그 시간 안이면 보내지도, 알림 기록 탭에 쓰지도, ALERT_ 속성을 고치지도 않고 끝냅니다. 마지막 시도 시각(밀리초)은 스크립트 속성 "ALERT_" + meta_().sessionId + "_" + key에 두고, 없으면 0으로 봅니다.
-- 웹훅 주소는 DISCORD_WEBHOOK_URL에서만 읽고, /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/에 맞을 때만 UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "application/json", payload: JSON.stringify({ content: 보낼 글, allowed_mentions: { parse: [] } }), muteHttpExceptions: true })로 보냅니다.
+- `sendAlert_(key, message)`: 같은 `key`는 설정 `cooldown_minutes`분 안에 다시 보내지 않습니다.
+- 그 시간 안이면 보내지도, 알림 기록 탭에 쓰지도, `ALERT_` 속성을 고치지도 않고 끝냅니다.
+- 마지막 시도 시각(밀리초)은 스크립트 속성 `"ALERT_" + meta_().sessionId + "_" + key`에 두고, 없으면 0으로 봅니다.
+- 웹훅 주소는 `DISCORD_WEBHOOK_URL`에서만 읽고, 아래 첫 줄의 형식에 맞을 때만 둘째 줄처럼 보냅니다(주소와 보낼 글은 그 자리에 넣을 값입니다).
+
+```javascript
+/^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/
+UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "application/json", payload: JSON.stringify({ content: 보낼 글, allowed_mentions: { parse: [] } }), muteHttpExceptions: true })
+```
 
 ## 현장 이름 붙이기
 
@@ -88,7 +100,7 @@
 
 ### 약속
 
-- 보낼 글은 message가 "텀블공장: "이나 "물류창고: "로 시작하면 그대로, 아니면 "텀블공장: " + message입니다(현장 이름이 두 번 붙지 않게).
+- 보낼 글은 `message`가 "텀블공장: "이나 "물류창고: "로 시작하면 그대로, 아니면 `"텀블공장: " + message`입니다(현장 이름이 두 번 붙지 않게).
 
 ## 보낸 결과 남기기
 
@@ -98,8 +110,15 @@
 
 ### 약속
 
-- 결과는 응답 코드 200~299면 "sent", 아니면 "failed"이고 상세는 "HTTP " + 코드입니다. 주소가 없거나 틀리거나 보내다 오류가 나면 "failed", 상세 "알림 연결 또는 웹훅 설정을 확인해 주세요."입니다.
-- 결과는 알림 기록 탭 끝에 [지금 ISO 시각, key, message(이름을 붙이기 전 글), 발송 상태, 상세]를 toRow_로 한 행 더하고, 실패여도 ALERT_ 속성에 지금 시각을 저장합니다. 화면 알림 카드는 이 탭의 마지막 행을 읽습니다.
+| 경우 | 발송 상태 | 상세 |
+|---|---|---|
+| 응답 코드 200~299 | "sent" | "HTTP " + 코드 |
+| 그 밖의 응답 코드 | "failed" | "HTTP " + 코드 |
+| 주소가 없거나 틀리거나 보내다 오류가 나면 | "failed" | "알림 연결 또는 웹훅 설정을 확인해 주세요." |
+
+- 결과는 알림 기록 탭 끝에 [지금 ISO 시각, key, message(이름을 붙이기 전 글), 발송 상태, 상세]를 `toRow_`로 한 행 더합니다.
+- 실패여도 `ALERT_` 속성에 지금 시각을 저장합니다.
+- 화면 알림 카드는 이 탭의 마지막 행을 읽습니다.
 
 ## 알림 시험 함수
 
@@ -107,7 +126,7 @@
 
 ### 약속
 
-- testDiscordAlert(): withLock_ 안에서 sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.")를 부릅니다.
+- `testDiscordAlert()`: `withLock_` 안에서 `sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.")`를 부릅니다.
 
 ## 설정 이력
 
@@ -117,7 +136,9 @@
 
 ### 약속
 
-- rememberSettings_(): meta_()의 revision을 1 올리고 changedAt을 지금으로 바꿉니다. 설정 탭 A1 메모의 설정 이력 끝에 { at: 지금, settings: settings_(), revision: 새 revision }을 더하고, 바뀐 meta를 TUMBLE_META에 저장합니다.
+- `rememberSettings_()`: `meta_()`의 `revision`을 1 올리고 `changedAt`을 지금으로 바꿉니다.
+- 설정 탭 A1 메모의 설정 이력 끝에 { at: 지금, settings: settings_(), revision: 새 revision }을 더합니다.
+- 바뀐 `meta`를 `TUMBLE_META`에 저장합니다.
 
 ## 한 줄 처리 앞부분
 
@@ -127,7 +148,13 @@
 
 ### 약속
 
-- processRow_(sheet, row, notify) 앞부분: 그 행 1~6열을 fromCell_로 읽고 A칸 메모를 봅니다. 메모가 있고 원본에 처리 시각이 있으면 행을 원본(toRow_)으로 되돌려 쓰고 끝냅니다. 메모가 있고 처리 전이면 원본 값으로 이어 처리하고, 메모가 없으면 접수·처리 시각을 비웁니다.
+`processRow_(sheet, row, notify)` 앞부분은 그 행 1~6열을 `fromCell_`로 읽고 A칸 메모를 봅니다.
+
+| A칸 메모 | 할 일 |
+|---|---|
+| 있고 원본에 처리 시각이 있으면 | 행을 원본(`toRow_`)으로 되돌려 쓰고 끝냅니다. |
+| 있고 처리 전이면 | 원본 값으로 이어 처리합니다. |
+| 없으면 | 읽은 값의 접수·처리 시각을 비웁니다(시트 칸은 끝부분에서 씁니다). |
 
 ## 한 줄 처리 입력 검사
 
@@ -137,7 +164,8 @@
 
 ### 약속
 
-- processRow_ 검사: kind는 탭이 "생산 기록"이면 production, 아니면 shipment입니다. 같은 탭 다른 행에 같은 ID(String 비교, 빈 ID는 제외)가 있거나 TumbleCore.parse([값], kind, 지금)에 오류가 있으면 6열에 "입력 확인 필요"를 쓰고, notify면 sendAlert_("input-" + kind + "-" + 행 번호, "같은 기록 ID가 있습니다." 또는 parse 첫 오류 문장)을 부른 뒤 끝냅니다.
+- `processRow_` 검사: `kind`는 탭이 "생산 기록"이면 `production`, 아니면 `shipment`입니다.
+- 같은 탭 다른 행에 같은 ID(`String` 비교, 빈 ID는 제외)가 있거나 TumbleCore.parse([값], kind, 지금)에 오류가 있으면 6열에 "입력 확인 필요"를 쓰고, `notify`면 sendAlert_("input-" + kind + "-" + 행 번호, "같은 기록 ID가 있습니다." 또는 parse 첫 오류 문장)을 부른 뒤 끝냅니다.
 
 ## 한 줄 처리 끝부분
 
@@ -147,7 +175,10 @@
 
 ### 약속
 
-- processRow_ 끝부분: 빈 행이면 끝냅니다. 접수 시각이 비었으면 지금으로 채웁니다. 그 현장 처리 정지(factory_paused·warehouse_paused)가 true면 처리 시각 "", 처리 상태 "처리 대기", 아니면 처리 시각 지금, 처리 상태 "완료"입니다. 값을 toRow_로 그 행에 쓰고 A칸 메모에 값의 JSON을 씁니다.
+- `processRow_` 끝부분: 빈 행이면 끝냅니다.
+- 접수 시각이 비었으면 지금으로 채웁니다.
+- 그 현장 처리 정지(`factory_paused`·`warehouse_paused`)가 `true`면 처리 시각 "", 처리 상태 "처리 대기", 아니면 처리 시각 지금, 처리 상태 "완료"입니다.
+- 값을 `toRow_`로 그 행에 쓰고 A칸 메모에 값의 JSON을 씁니다.
 
 ## 모든 기록 처리 함수
 
@@ -157,7 +188,7 @@
 
 ### 약속
 
-- processPendingRecords(): 두 기록 탭의 2행부터 마지막 행까지 processRow_(탭, 행, true)를 부르고 끝에 rememberSettings_()를 부릅니다.
+- `processPendingRecords()`: 두 기록 탭의 2행부터 마지막 행까지 processRow_(탭, 행, true)를 부르고 끝에 `rememberSettings_()`를 부릅니다.
 
 ## 데모 생산 기록 함수
 
@@ -167,7 +198,8 @@
 
 ### 약속
 
-- addDemoProductionRecord(): 생산 기록 탭 끝에 ["P-" + Utilities.getUuid(), 10, 지금 ISO 시각, "", "", "대기"]를 toRow_로 더하고, 그 행에 processRow_(탭, 행, true)를 부른 뒤 rememberSettings_()를 부릅니다.
+- `addDemoProductionRecord()`: 생산 기록 탭 끝에 ["P-" + Utilities.getUuid(), 10, 지금 ISO 시각, "", "", "대기"]를 `toRow_`로 더합니다.
+- 그 행에 processRow_(탭, 행, true)를 부른 뒤 `rememberSettings_()`를 부릅니다.
 
 ## 시트를 고치면 처리하는 함수
 
@@ -177,7 +209,12 @@
 
 ### 약속
 
-- onEditInstalled(e): e나 e.range가 없거나 e.source.getId()가 SPREADSHEET_ID와 다르면 아무것도 하지 않습니다. 편집한 탭이 "설정"이면 rememberSettings_()만 부릅니다. 기록 탭이 아니거나 편집 범위 첫 행이 1행이면 끝냅니다. 그 밖에는 편집 범위의 행마다 processRow_(탭, 행, true) 뒤 rememberSettings_()입니다.
+`onEditInstalled(e)`는 아래를 차례로 봅니다.
+
+1. `e`나 `e.range`가 없거나 `e.source.getId()`가 `SPREADSHEET_ID`와 다르면 아무것도 하지 않습니다.
+2. 편집한 탭이 "설정"이면 `rememberSettings_()`만 부릅니다.
+3. 기록 탭이 아니거나 편집 범위 첫 행이 1행이면 끝냅니다.
+4. 그 밖에는 편집 범위의 행마다 processRow_(탭, 행, true)를 부르고, 반복이 끝난 뒤 `rememberSettings_()`를 한 번 부릅니다.
 
 ## 늦은 기록을 알리는 함수
 
@@ -187,7 +224,8 @@
 
 ### 약속
 
-- checkRecordDelays(): readData_()로 지금 자료를 읽어 TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), null, data.now, data.errors)를 만들고, incidents 가운데 scope가 "service"가 아닌 것마다 sendAlert_(사건 id, alertMessage_(사건))를 부릅니다.
+- `checkRecordDelays()`: `readData_()`로 지금 자료를 읽어 `TumbleCore.snapshot(data.records, data.settings, data.meta, alerts_(), null, data.now, data.errors)`를 만듭니다.
+- `incidents` 가운데 `scope`가 "service"가 아닌 것마다 sendAlert_(사건 id, alertMessage_(사건))를 부릅니다.
 
 ## 자동 실행 설치 함수
 
@@ -195,7 +233,10 @@
 
 ### 약속
 
-- installTrainingTriggers(): SPREADSHEET_ID가 없으면 "시트를 먼저 생성해 주세요.". 실행 함수가 onEditInstalled나 checkRecordDelays인 트리거를 모두 지운 뒤 ScriptApp.newTrigger("onEditInstalled").forSpreadsheet(시트 ID).onEdit().create()와 ScriptApp.newTrigger("checkRecordDelays").timeBased().everyMinutes(1).create()를 만듭니다. 여러 번 실행해도 두 개만 남습니다.
+- `installTrainingTriggers()`: `SPREADSHEET_ID`가 없으면 "시트를 먼저 생성해 주세요."입니다.
+- 실행 함수가 `onEditInstalled`나 `checkRecordDelays`인 트리거를 모두 지웁니다.
+- 그 뒤 ScriptApp.newTrigger("onEditInstalled").forSpreadsheet(시트 ID).onEdit().create()와 `ScriptApp.newTrigger("checkRecordDelays").timeBased().everyMinutes(1).create()`를 만듭니다.
+- 여러 번 실행해도 두 개만 남습니다.
 
 ## 사용자가 직접 하는 일
 
@@ -210,7 +251,8 @@
 
 ### 약속
 
-- Discord 웹훅 주소는 채팅에 옮겨 적지 않고 코드·시트·문서·로그에 쓰지 않습니다. 사용자가 스크립트 속성 DISCORD_WEBHOOK_URL에 직접 넣습니다.
-- GAS 편집기 실행, 스크립트 속성, 트리거 메뉴, Discord 설정은 사용자가 직접 합니다. 브라우저를 대신 조작하지 않습니다.
+- Discord 웹훅 주소는 채팅에 옮겨 적지 않고 코드·시트·문서·로그에 쓰지 않습니다. 사용자가 스크립트 속성 `DISCORD_WEBHOOK_URL`에 직접 넣습니다.
+- GAS 편집기 실행, 스크립트 속성, 트리거 메뉴, Discord 설정은 사용자가 직접 합니다.
+- 브라우저를 대신 조작하지 않습니다.
 
 [session-6 문서 끝]
