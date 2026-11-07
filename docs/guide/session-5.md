@@ -59,16 +59,16 @@
 | 웹 앱 설정 파일 | `gas/appsscript.json` |
 | 연습 파일(작은 계산 다섯 가지) | `gas/Exercises.gs` |
 | 계산 파일 | `gas/Core.gs`의 `TumbleCore` |
-| 시각 바꾸기, 한국 날짜 구하기, 기준 시각 검사 | `iso`, `day`, `view` |
-| 시트에 적힌 행을 화면이 쓸 기록으로 바꾸고 틀린 행은 오류 목록에 모으는 일 | `parse` |
-| 기준 시각까지의 기록을 고르는 일 | `recordsAt` |
+| 시각과 기준 시각 검사(시각 바꾸기, 한국 날짜 구하기, 기준 시각 검사) | `iso`, `day`, `view` |
+| 시트 행 바꾸기(시트에 적힌 행을 화면이 쓸 기록으로 바꾸고 틀린 행은 오류 목록에 모으는 일) | `parse` |
+| 기록 고르기(기준 시각까지의 기록을 고르는 일) | `recordsAt` |
 | 오늘 운영 화면이 받는 자료, 오늘 운영 자료 | `snapshot` |
-| 먼저 확인할 일 상자에 나올 목록 | `incidents` |
+| 확인할 일 목록(먼저 확인할 일 상자에 나올 목록) | `incidents` |
 | 시트 작업 파일 | `gas/Code.gs` |
-| 칸 값을 쓰고 읽는 일, 이름으로 탭 읽기 | `toCell_`, `toRow_`, `fromCell_`, `rows_` |
+| 칸 값 쓰고 읽기, 이름으로 탭 읽기 | `toCell_`, `toRow_`, `fromCell_`, `rows_` |
 | 설정 탭에 지금 적힌 값을 읽어 검사하는 일(설정 탭 읽기), 세션 정보를 읽는 일 | `settings_`, `meta_` |
-| 웹 앱이 JSON으로 답하는 일, 알림 기록 탭을 읽는 일 | `json_`, `alerts_` |
-| 생산 기록·출고 기록 탭을 읽는 일 | `readData_` |
+| 웹 앱 응답 만들기(웹 앱이 JSON으로 답하는 일), 알림 기록 탭 읽기 | `json_`, `alerts_` |
+| 생산 기록·출고 기록 탭 읽기 | `readData_` |
 | 웹 앱 입구, 오늘 운영 자료를 답하는 길, 기록 조회 길 | `doGet`, `api/v1/snapshot`, `api/v1/records` |
 | 실습용 Google 시트를 새로 만드는 기능 | `gas/Setup.gs`의 `createTrainingSpreadsheet` |
 
@@ -173,7 +173,7 @@
 
 ### 값과 모양
 
-`appsscript.json`은 2칸 들여쓰기로 다음 내용입니다.
+`appsscript.json`은 2칸 들여쓰기로 다음 내용을 한 글자도 바꾸지 않고 그대로 씁니다.
 
 ```json
 {
