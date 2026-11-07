@@ -34,12 +34,12 @@
 | 잠금 | `withLock_` |
 | Discord 시험 채널로 알림을 보내는 기능 | `sendAlert_` |
 | 알림 시험 함수 | `testDiscordAlert` |
-| 설정 이력 끝에 한 번 더 남기는 기능 | `rememberSettings_` |
+| 설정 탭의 지금 값을 설정 이력 끝에 더하는 기능 | `rememberSettings_` |
 | 기록 탭의 한 줄을 접수하고 처리하는 기능(한 줄 처리), 앞부분·입력 검사·끝부분 | `processRow_` |
-| 두 탭의 모든 줄을 처리하는 함수 | `processPendingRecords` |
-| 생산 기록 탭 끝에 기록 한 줄을 더하고 바로 처리하는 함수 | `addDemoProductionRecord` |
-| 시트를 고치면 고친 기록 줄을 바로 처리하는 함수 | `onEditInstalled` |
-| 확인할 일이 있으면 Discord로 알리는 함수 | `checkRecordDelays` |
+| 모든 기록 처리 함수(두 탭의 모든 줄을 처리하는 함수) | `processPendingRecords` |
+| 데모 생산 기록 함수(생산 기록 탭 끝에 기록 한 줄을 더하고 바로 처리하는 함수) | `addDemoProductionRecord` |
+| 고친 기록 줄을 바로 처리하는 자동 실행용 함수(시트를 고치면 고친 기록 줄을 바로 처리하는 함수) | `onEditInstalled` |
+| 확인할 일이 있으면 Discord로 알리는 자동 실행용 함수 | `checkRecordDelays` |
 | 두 함수의 자동 실행(트리거)을 만드는 함수 | `installTrainingTriggers` |
 
 ## 코드를 두는 곳과 올리는 법
@@ -128,7 +128,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ### 약속
 
-- `testDiscordAlert()`: `withLock_` 안에서 `sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.")`를 부릅니다.
+- `testDiscordAlert()`: `withLock_` 안에서 `sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.")`를 부릅니다. 사용자가 편집기에서 골라 실행합니다.
 
 ## 설정 이력
 
@@ -222,7 +222,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 쓰는 단계: 6-13
 
-본문 전체를 `withLock_` 안에서 실행합니다.
+이 함수는 트리거로 1분마다 자동으로 실행되어, 생산·출고 현장에 확인할 일이 있으면 Discord로 알립니다. 트리거는 6-14에서 만듭니다. 본문 전체를 `withLock_` 안에서 실행합니다.
 
 ### 약속
 
@@ -235,6 +235,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ### 약속
 
+- 사용자가 편집기에서 골라 실행합니다.
 - `installTrainingTriggers()`: `SPREADSHEET_ID`가 없으면 "시트를 먼저 생성해 주세요."입니다.
 - 실행 함수가 `onEditInstalled`나 `checkRecordDelays`인 트리거를 모두 지웁니다.
 - 그 뒤 ScriptApp.newTrigger("onEditInstalled").forSpreadsheet(시트 ID).onEdit().create()와 `ScriptApp.newTrigger("checkRecordDelays").timeBased().everyMinutes(1).create()`를 만듭니다.
