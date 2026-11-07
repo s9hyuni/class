@@ -5,8 +5,9 @@
 ## 이 문서를 읽는 법
 
 - 백틱 안의 글은 이름이나 값입니다. 글자 그대로 씁니다.
-- 큰따옴표 안의 글은 화면에 나오는 글자이거나 코드에 들어가는 값입니다. 한 글자도 바꾸지 않습니다.
+- 큰따옴표 안의 글은 화면에 나오는 글자이거나 코드에 들어가는 값입니다. 한 글자도 바꾸지 않습니다. 단, 프롬프트 마지막 참고 줄의 큰따옴표 안은 이 문서의 절 제목입니다.
 - "쓰는 단계"는 그 내용을 만드는 프롬프트 번호입니다. 프롬프트 맨 앞의 `[2-14]` 같은 표시가 이번 단계입니다. 그 번호가 "쓰는 단계"나 줄 앞에 적힌 내용만 만들고, 다른 번호의 내용은 그 프롬프트를 받기 전에 만들지 않습니다.
+- "만들지 않는 것" 절에 적힌 기능은 완료 브랜치 코드에 있어도 만들지 않습니다.
 - 창고 쪽 이름은 공장 쪽 이름의 `factory`를 `warehouse`로 바꾼 같은 이름입니다.
 
 ## 이 회차에서 만드는 것
@@ -19,13 +20,13 @@
 
 ## 앞 회차에서 바뀌는 것
 
-- 5회차 '코드를 고친 뒤'에는 "gas:push 뒤 gas:redeploy"라고 적혀 있습니다. 이번 회차는 웹 앱 입구를 바꾸지 않아서 사용자가 gas:push만 하고 gas:redeploy는 하지 않습니다. 편집기 실행과 트리거는 gas:push로 올린 코드로 바로 돌아갑니다.
+- 5회차 'Google 명령을 실행할 때'에는 "gas:push 뒤 gas:redeploy"라고 적혀 있습니다. 이번 회차는 웹 앱 입구를 바꾸지 않아서 AI 도구가 프롬프트를 받아 gas:push만 하고 gas:redeploy는 하지 않습니다. 편집기 실행과 트리거는 gas:push로 올린 코드로 바로 돌아갑니다.
 - 5회차에 다른 곳에서 부르지 않던 `settings_()`를 이번 회차 `rememberSettings_()`가 부릅니다.
 - 5회차에 만든 도구(`toRow_`, `fromCell_`, `settings_()`, `meta_()`, `readData_()`, `alerts_()`, `alertMessage_`, `TumbleCore`)는 새로 만들지 않고 그대로 부릅니다.
 
 ## 프롬프트의 말과 실제 이름
 
-쓰는 단계: 6-1 ~ 6-22
+쓰는 단계: 6-2 ~ 6-15
 
 | 프롬프트의 말 | 실제 이름 |
 |---|---|
@@ -43,16 +44,17 @@
 
 ## 코드를 두는 곳과 올리는 법
 
-쓰는 단계: 6-1 ~ 6-22
+쓰는 단계: 6-2 ~ 6-15
 
 ### 약속
 
 - 이번 회차 함수는 모두 `gas/Code.gs` 끝에 더합니다.
-- 웹 앱 입구(`doGet`)는 바꾸지 않으므로 사용자는 `gas:push`만 하고 `gas:redeploy`는 하지 않습니다.
+- 함수를 만드는 번호에서는 Google에 올리지 않습니다. `gas:push`는 올리라는 프롬프트(6-6, 6-11, 6-15)를 받았을 때만 한 번 실행하고, 실패하면 다시 실행하지 않고 결과를 그대로 알립니다.
+- 웹 앱 입구(`doGet`)는 바꾸지 않으므로 `gas:push`만 하고 `gas:redeploy`와 `gas:deploy`는 하지 않습니다.
 
 ## 함수 이름
 
-쓰는 단계: 6-5, 6-14, 6-15, 6-20, 6-21, 6-22
+쓰는 단계: 6-4, 6-10, 6-12, 6-13, 6-14
 
 사용자는 이 이름으로 편집기의 함수 목록과 트리거 목록에서 함수를 찾습니다.
 
@@ -63,11 +65,11 @@
 
 ## 잠금
 
-쓰는 단계: 6-1, 6-5, 6-14, 6-15, 6-20, 6-21
+쓰는 단계: 6-2, 6-4, 6-10, 6-12, 6-13
 
 시트에 쓰는 일이 동시에 두 개 실행되면 같은 줄을 겹쳐 쓸 수 있습니다. 한 번에 하나만 실행되게 합니다.
 
-이 잠금은 6-1에서 만듭니다. `testDiscordAlert`, `processPendingRecords`, `addDemoProductionRecord`, `checkRecordDelays`는 만들 때 본문 전체를 이 안에서 실행합니다. `onEditInstalled`는 첫 검사(`e`, `e.range`, 시트 ID)를 통과한 뒤의 일을 모두 이 안에서 실행합니다. `sendAlert_`, `rememberSettings_`, `processRow_`는 이 함수들 안에서 불리므로 따로 잠그지 않습니다. `installTrainingTriggers`는 시트에 쓰지 않아 이 안에 넣지 않습니다. 5회차의 `createTrainingSpreadsheet`는 고치지 않습니다.
+이 잠금은 6-2에서 만듭니다. `testDiscordAlert`, `processPendingRecords`, `addDemoProductionRecord`, `checkRecordDelays`는 만들 때 본문 전체를 이 안에서 실행합니다. `onEditInstalled`는 첫 검사(`e`, `e.range`, 시트 ID)를 통과한 뒤의 일을 모두 이 안에서 실행합니다. `sendAlert_`, `rememberSettings_`, `processRow_`는 이 함수들 안에서 불리므로 따로 잠그지 않습니다. `installTrainingTriggers`는 시트에 쓰지 않아 이 안에 넣지 않습니다. 5회차의 `createTrainingSpreadsheet`는 고치지 않습니다.
 
 ### 약속
 
@@ -76,7 +78,7 @@
 
 ## Discord 알림 보내기
 
-쓰는 단계: 6-2
+쓰는 단계: 6-3
 
 웹훅 주소와 보내다가 난 오류의 내용은 로그와 시트에 남기지 않습니다. 상세 칸에는 '보낸 결과 남기기' 표의 글만 씁니다.
 
@@ -122,7 +124,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 알림 시험 함수
 
-쓰는 단계: 6-5
+쓰는 단계: 6-4
 
 ### 약속
 
@@ -130,7 +132,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 설정 이력
 
-쓰는 단계: 6-10
+쓰는 단계: 6-7
 
 화면은 설정 탭을 바로 읽지 않고 설정 탭 A1 칸의 메모(설정 이력)를 읽습니다. 기록을 처리할 때마다 지금 설정을 이력에 더합니다.
 
@@ -142,7 +144,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 한 줄 처리 앞부분
 
-쓰는 단계: 6-11
+쓰는 단계: 6-8
 
 기록 줄의 A칸 메모에는 접수한 기록의 원본이 들어 있습니다. 접수한 기록은 시트에서 고쳐도 화면 값이 바뀌지 않게 합니다.
 
@@ -158,7 +160,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 한 줄 처리 입력 검사
 
-쓰는 단계: 6-12
+쓰는 단계: 6-8
 
 앞부분에서 고른 값을 검사합니다. 문제가 있으면 여기서 끝나고 끝부분으로 가지 않습니다.
 
@@ -169,7 +171,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 한 줄 처리 끝부분
 
-쓰는 단계: 6-13
+쓰는 단계: 6-9
 
 검사를 지난 값만 여기까지 옵니다.
 
@@ -182,7 +184,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 모든 기록 처리 함수
 
-쓰는 단계: 6-14
+쓰는 단계: 6-10
 
 본문 전체를 `withLock_` 안에서 실행합니다.
 
@@ -192,7 +194,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 데모 생산 기록 함수
 
-쓰는 단계: 6-15
+쓰는 단계: 6-10
 
 본문 전체를 `withLock_` 안에서 실행합니다.
 
@@ -203,7 +205,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 시트를 고치면 처리하는 함수
 
-쓰는 단계: 6-20
+쓰는 단계: 6-12
 
 손으로 실행하던 처리를, 시트를 고치는 순간 자동으로 하게 합니다. 첫 검사(`e`, `e.range`, 시트 ID)를 통과한 뒤의 일을 모두 `withLock_` 안에서 실행합니다.
 
@@ -218,7 +220,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 늦은 기록을 알리는 함수
 
-쓰는 단계: 6-21
+쓰는 단계: 6-13
 
 본문 전체를 `withLock_` 안에서 실행합니다.
 
@@ -229,7 +231,7 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 자동 실행 설치 함수
 
-쓰는 단계: 6-22
+쓰는 단계: 6-14
 
 ### 약속
 
@@ -240,13 +242,13 @@ UrlFetchApp.fetch(주소 + "?wait=true", { method: "post", contentType: "applica
 
 ## 사용자가 직접 하는 일
 
-쓰는 단계: 6-6 ~ 6-9, 6-16 ~ 6-19, 6-23 ~ 6-27
+쓰는 단계: 6-5, 6-6, 6-11, 6-15 ~ 6-20
 
-아래 일은 사용자가 합니다. AI 도구는 실행하지 않습니다.
+아래 일은 사용자가 합니다. AI 도구는 실행하지 않습니다. `gas:push`로 올리기만 AI 도구가 프롬프트(6-6, 6-11, 6-15)를 받아 합니다.
 
-- Discord 웹훅 만들기(6-6), 스크립트 속성에 웹훅 주소 넣기(6-7)
-- `npm.cmd run gas:push`로 올리기, 편집기에서 함수 실행(6-8, 6-9, 6-16 ~ 6-19, 6-23)
-- 시트를 직접 고치기(6-17 ~ 6-19, 6-24, 6-25), 트리거 설치와 지우기(6-23, 6-27)
+- Discord 웹훅 만들기와 스크립트 속성에 웹훅 주소 넣기(6-5)
+- 편집기에서 함수 실행(6-6, 6-11, 6-15, 6-18)
+- 시트를 직접 고치기(6-16, 6-17), 트리거 설치와 지우기(6-15, 6-20), 커밋(6-19)
 - 화면 서버 켜기와 끄기
 
 ### 약속
