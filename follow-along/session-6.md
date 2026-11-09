@@ -8,18 +8,10 @@ Discord 알림, 시트 기록 처리, 자동 실행(트리거)이 동작합니�
 
 5회차를 끝낸 `C:\ai-class\tumble-dashboard`에서 이어 합니다(완료 브랜치 `milestone-5`와 같은 출발점). 내 GAS 웹 앱이 배포돼 있고, 화면은 내 Google 시트 값으로 "조회 정상"이며 기록 화면도 열립니다.
 
-준비물: 5회차에 쓴 개인 Google 계정으로 로그인한 Chrome, Discord 계정(Chrome에서 https://discord.com 으로 써도 됩니다), 명령 창, 화면 창(화면 서버를 켜 둘 창)
+준비물: 5회차에 쓴 개인 Google 계정으로 로그인한 Chrome, Discord 계정(Chrome에서 https://discord.com 으로 써도 됩니다), 명령 창, 화면 창(화면 서버가 켜진 창)
 
-1. 화면 창에서 아래를 치고 Chrome에서 `http://127.0.0.1:4173`을 엽니다.
-
-```powershell
-cd C:\ai-class\tumble-dashboard
-npm.cmd start
-```
-
-   서버를 켜 둔 창이 이미 있으면 이 명령을 치지 않고 주소만 엽니다.
-
-2. AI 도구로 `C:\ai-class\tumble-dashboard` 폴더를 열고 새 대화를 시작합니다.
+1. AI 도구로 `C:\ai-class\tumble-dashboard` 폴더를 열고 새 대화를 시작합니다.
+2. 화면 창이 켜져 있으면 Chrome에서 `http://127.0.0.1:4173`을 엽니다. 화면 창이 없으면 아래 6-1을 먼저 보내고, 답이 오면 AI 도구에 "화면 서버를 켜 주세요."라고 보낸 뒤 같은 주소를 엽니다. 이때는 6-2부터 이어 갑니다.
 3. 아래 "수업 날 새 실습 시트 만들기"를 합니다.
 
 이번 회차에 알아 둘 것은 아래와 같습니다.

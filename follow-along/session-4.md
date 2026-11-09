@@ -10,31 +10,23 @@
 
 준비물: 3회차까지 만든 대시보드 폴더, Node.js 22 이상, 패키지를 받을 인터넷, Chrome.
 
-1. 화면 창(화면 서버를 켜 둘 창)에서 아래를 치고 Chrome에서 `http://127.0.0.1:4173`을 엽니다. 화면 맨 위에 "조회 정상"이 보이는지 봅니다. 내 서버(`backend`)는 4-5에서 처음 켭니다.
-
-```powershell
-cd C:\ai-class\tumble-dashboard
-npm.cmd start
-```
-
-   서버를 켜 둔 창이 이미 있으면 이 명령을 치지 않고 주소만 엽니다.
-
-2. AI 도구로 `C:\ai-class\tumble-dashboard` 폴더를 열고 새 대화를 시작합니다.
+1. AI 도구로 `C:\ai-class\tumble-dashboard` 폴더를 열고 새 대화를 시작합니다.
+2. 화면 창(화면 서버가 켜진 창)이 있으면 Chrome에서 `http://127.0.0.1:4173`을 엽니다. 화면 창이 없으면 아래 4-1을 먼저 보내고, 답이 오면 AI 도구에 "화면 서버를 켜 주세요."라고 보낸 뒤 같은 주소를 엽니다. 이때는 4-2부터 이어 갑니다. 화면 맨 위에 "조회 정상"이 보이는지 봅니다. 내 서버(`backend`)는 4-5에서 처음 켭니다.
 
 이번 회차에 알아 둘 것은 아래와 같습니다.
 
 - 이번 회차에 처음 나오는 말입니다.
   - **NestJS**: TypeScript로 서버를 만드는 도구입니다. 내 서버(`backend`)를 이것으로 만듭니다.
-  - **빌드**: TypeScript로 쓴 서버 코드를 Node.js가 실행할 수 있는 파일(`backend\dist`)로 바꾸는 일입니다. 서버 창에서 `npm.cmd run build`로 합니다.
+  - **빌드**: TypeScript로 쓴 서버 코드를 Node.js가 실행할 수 있는 파일(`backend\dist`)로 바꾸는 일입니다. AI 도구가 `backend` 폴더에서 `npm.cmd run build`로 합니다.
   - **1단계·2단계·3단계**: 화면이 자료를 받는 곳입니다. 3회차까지 쓴 강사 API가 1단계, 이번 회차의 내 서버가 2단계, 5회차의 GAS 웹 앱이 3단계입니다. `API_CONTRACT.md` 9절 표의 단계와 같고, `[4-1]` 같은 단계 번호와는 다른 말입니다.
 - 새 대화를 열 때마다 4-1의 프롬프트를 먼저 보낸 뒤, 하던 번호부터 이어 갑니다.
 - 명령 상자(PowerShell 명령이 든 상자)는 AI 도구에 보내지 않고, 그 번호가 말한 창에 직접 칩니다.
 - "완료 기준"과 다르게 나오면 화면의 글이나 서버 창의 빨간 줄을 그대로 복사해 "이렇게 나와요. 고쳐 주세요."와 함께 AI 도구에 붙여 넣습니다.
 - 이번 회차는 창을 세 개 씁니다.
-  - 화면 창: `cd C:\ai-class\tumble-dashboard` 뒤 `npm.cmd start`(4173). 켜 둔 채로 둡니다.
-  - 서버 창: `cd C:\ai-class\tumble-dashboard\backend` 뒤 `npm.cmd start`(3000). 4-5부터 씁니다.
-  - 명령 창: `cd C:\ai-class\tumble-dashboard` 뒤 설치, `curl.exe`, `git` 같은 명령을 칩니다.
-- **서버 코드를 바꾼 번호(4-6 ~ 4-10)의 완료 기준은 늘 서버를 다시 빌드해 켠 뒤에 봅니다.** 서버 창에서 Ctrl+C로 끄고(Y/N을 물으면 `Y`), `npm.cmd run build`, `npm.cmd start`를 차례로 칩니다. 빌드를 하지 않으면 예전 코드로 실행됩니다.
+  - 화면 창: AI 도구가 열어 화면 서버(4173)를 켠 창입니다. 켜 둔 채로 둡니다.
+  - 서버 창: AI 도구가 열어 내 서버(3000)를 켠 창입니다. 4-5부터 씁니다. AI 도구가 내 서버를 다시 켤 때마다 새 서버 창이 열리고, 서버가 꺼진 예전 창은 닫아도 됩니다.
+  - 명령 창: `cd C:\ai-class\tumble-dashboard` 뒤 `curl.exe`, `git` 같은 명령을 칩니다.
+- **서버 코드를 바꾼 번호(4-6 ~ 4-10)는 AI 도구가 마치기 전에 서버를 다시 빌드해 새 서버 창에서 켭니다.** 완료 기준은 새 서버 창에 `Nest application successfully started`가 나온 뒤에 봅니다. AI 도구가 다시 켜지 않았으면 "내 서버를 다시 빌드해 켜 주세요."라고 보냅니다. 빌드를 하지 않으면 예전 코드로 실행됩니다.
 - 파일을 열어 볼 때는 메모장을 씁니다. 창이 어느 폴더에 있든 되도록 전체 경로로 칩니다. 예: `notepad C:\ai-class\tumble-dashboard\backend\var\state.json`
 - 서버 창에는 켤 때의 줄과 오류 줄만 나오고, 요청마다 줄이 남지 않습니다. 요청은 Chrome의 F12, Network 탭에서 봅니다.
 - 명령은 `npm.cmd`, `curl.exe`로 칩니다. PowerShell에서 `curl`만 치면 다른 명령이 실행됩니다.
@@ -56,32 +48,26 @@ npm.cmd start
 
 ```text
 [4-2] 화면에 값을 줄 내 서버를 만들기 위해, 대시보드 폴더 안에 내 서버(NestJS) 폴더와 패키지 목록, 설정 파일을 추가해 주세요.
-패키지 설치는 제가 직접 하니 하지 마세요.
+패키지 설치는 다음 번호에서 합니다.
 자세한 내용은 docs/guide/session-4.md의 "내 서버의 구성"을 참고해 주세요.
 ```
 
 - 하는 일: 여기부터 대시보드 폴더 안 `backend` 폴더에 내 서버를 만듭니다. 이 번호에서는 `backend` 폴더와 그 안의 패키지 목록(`package.json`), TypeScript 설정(`tsconfig.json`), Git 제외 목록(`.gitignore`)이 생깁니다.
-- 목표: 내 서버에 쓸 패키지와 버전, 빌드 방법을 먼저 정해 둡니다. 패키지는 AI 도구가 아니라 4-3에서 내가 직접 설치합니다.
+- 목표: 내 서버에 쓸 패키지와 버전, 빌드 방법을 먼저 정해 둡니다. 패키지는 이 번호가 아니라 4-3에서 설치합니다.
 - 완료 기준: `backend` 안에 `package.json`, `tsconfig.json`, `.gitignore`가 생겼고, `package.json`의 버전 숫자 앞에 `^`나 `~`가 없습니다. 아직 `node_modules` 폴더는 없습니다.
 
-## 4-3. 패키지 설치 (직접 하기)
+## 4-3. 패키지 설치
 
-1. 명령 창(없으면 하나 더 엽니다)에서 칩니다.
-
-```powershell
-cd C:\ai-class\tumble-dashboard\backend
-npm.cmd install
-npm.cmd ls --depth=0
-cd C:\ai-class\tumble-dashboard
+```text
+[4-3] 내 서버를 빌드하고 켤 수 있도록, 내 서버 폴더에 패키지 목록대로 패키지를 설치해 주세요.
+자세한 내용은 docs/guide/session-4.md의 "내 서버 설치·빌드·켜기"를 참고해 주세요.
 ```
 
-   마지막 줄은 명령 창을 대시보드 폴더로 되돌립니다.
-
-- 하는 일: `backend` 폴더에 패키지 목록대로 NestJS 패키지를 설치합니다.
+- 하는 일: AI 도구가 `backend` 폴더에 패키지 목록대로 NestJS 패키지를 설치하고, 설치된 패키지 목록을 답에 보여 줍니다.
 - 목표: 4-5에서 서버를 빌드하고 켜려면 이 패키지들이 있어야 합니다. 버전을 고정해 두어 모두 같은 버전으로 설치됩니다.
 - 완료 기준:
-  - `backend\node_modules`와 `backend\package-lock.json`이 생깁니다. 취약점(vulnerabilities) 안내가 나와도 그대로 둡니다(`npm audit fix`를 치지 않습니다).
-  - `npm.cmd ls --depth=0`의 결과에 `@nestjs/common@11.2.7`, `@nestjs/core@11.2.7`, `@nestjs/platform-express@11.2.7`, `@types/node@24.4.0`, `reflect-metadata@0.2.2`, `rxjs@7.8.2`, `typescript@5.9.3` 일곱 줄이 나옵니다.
+  - `backend\node_modules`와 `backend\package-lock.json`이 생깁니다. 취약점(vulnerabilities) 안내가 나와도 그대로 둡니다(`npm audit fix`를 실행하지 않습니다).
+  - AI 도구 답의 `npm.cmd ls --depth=0` 결과에 `@nestjs/common@11.2.7`, `@nestjs/core@11.2.7`, `@nestjs/platform-express@11.2.7`, `@types/node@24.4.0`, `reflect-metadata@0.2.2`, `rxjs@7.8.2`, `typescript@5.9.3` 일곱 줄이 나옵니다.
 
 ## 4-4. 서버 시작 파일과 상태 확인 주소
 
@@ -95,23 +81,21 @@ cd C:\ai-class\tumble-dashboard
 - 목표: 4-5에서 서버가 켜져 응답하는지 먼저 보려고 주소는 상태 확인 하나만 만듭니다. 나머지 주소 셋(기록 목록, 오늘 운영 자료, 현장 사진)은 4-7부터 하나씩 더합니다.
 - 완료 기준: `backend\src` 안에 파일이 세 개 있습니다.
 
-## 4-5. 빌드하고 처음 켜기 (직접 하기)
+## 4-5. 빌드하고 처음 켜기
 
-1. PowerShell을 하나 더 열어 서버 창으로 씁니다.
-
-```powershell
-cd C:\ai-class\tumble-dashboard\backend
-npm.cmd run build
-npm.cmd start
+```text
+[4-5] 내 서버가 켜져 응답하는지 보기 위해, 내 서버를 빌드한 뒤 새 PowerShell 창을 열어 내 서버를 켜 주세요.
+자세한 내용은 docs/guide/session-4.md의 "내 서버 설치·빌드·켜기"를 참고해 주세요.
 ```
 
-- 하는 일: 서버 창에서 내 서버를 빌드해 처음 켜고, 상태 확인 주소를 브라우저와 `curl.exe`로 열어 봅니다.
-- 목표: 서버를 빌드하고 켜는 순서를 처음 해 봅니다. 4-6부터 서버 코드를 바꿀 때마다 같은 순서(끄기, 빌드, 켜기)로 다시 켭니다.
+- 하는 일: AI 도구가 내 서버를 빌드하고 새 PowerShell 창(서버 창)을 열어 처음 켭니다. 나는 상태 확인 주소를 브라우저와 `curl.exe`로 열어 봅니다.
+- 목표: 내 서버를 빌드하고 켜는 순서를 처음 거칩니다. 4-6부터 서버 코드를 바꿀 때마다 AI 도구가 같은 순서(끄기, 빌드, 켜기)로 다시 켭니다.
+- 직접 하기: Chrome에서 `http://127.0.0.1:3000/api/v1/health`를 열고, 명령 창에서 아래 완료 기준의 `curl.exe` 명령을 칩니다.
 - 완료 기준:
-  - `[Nest]`로 시작하는 줄 가운데 `Mapped {/api/v1/health, GET} route`가 있고, 마지막 줄이 `Nest application successfully started`입니다. Chrome에서 `http://127.0.0.1:3000/api/v1/health`를 열면 `{"status":"ok","releaseId":"local"}`이 보입니다.
+  - AI 도구가 연 서버 창에서 `[Nest]`로 시작하는 줄 가운데 `Mapped {/api/v1/health, GET} route`가 있고, 마지막 줄이 `Nest application successfully started`입니다. Chrome에서 `http://127.0.0.1:3000/api/v1/health`를 열면 `{"status":"ok","releaseId":"local"}`이 보입니다.
   - 명령 창에서 `curl.exe -i "http://127.0.0.1:3000/api/v1/health"`를 치면 `HTTP/1.1 200 OK`, `Access-Control-Allow-Origin: *`, `Cache-Control: no-store` 줄이 보입니다.
 - 막히면: Windows 방화벽 허용 창이 뜨면 취소하고 강사에게 알립니다. 이 서버는 이 PC 안에서만 열려야 합니다.
-- 막히면: 서버 창에 `EADDRINUSE`가 나오고 서버가 끝나면 3000번 포트를 다른 프로그램이 쓰고 있습니다. 그 프로그램을 닫거나 강사에게 알립니다.
+- 막히면: 서버 창에 `EADDRINUSE`가 나오고 서버가 끝나면 3000번 포트를 다른 프로그램이 쓰고 있습니다. 그 줄을 복사해 AI 도구에 붙여 넣고, AI 도구가 다른 프로그램이 쓰고 있다고 답하면 그 프로그램을 닫거나 강사에게 알립니다.
 - 알아 두기: `Access-Control-Allow-Origin: *`는 4173에서 열린 화면이 3000의 내 서버 자료를 읽어도 된다는 허용 표시입니다. 이 줄이 없으면 4-12에서 Console 탭에 CORS 오류가 나옵니다. `Cache-Control: no-store`는 브라우저가 응답을 저장해 두지 않고 늘 새로 받게 하는 표시입니다.
 
 ## 4-6. 시드 기록과 상태 파일
@@ -123,10 +107,10 @@ npm.cmd start
 
 - 하는 일: 서버를 처음 켤 때 오늘 0시부터 켠 시각 2분 전까지의 기록을 만들어 `backend\var\state.json`(상태 파일)에 저장하는 기능이 생깁니다. 이 기록을 시드 기록이라고 부릅니다.
 - 목표: 화면에 보일 오늘 기록의 원본입니다. 이미 있는 상태 파일은 그대로 쓰므로 서버를 다시 켜도 기록이 바뀌지 않습니다.
-- 직접 하기: 서버를 다시 빌드해 켠 뒤 명령 창에서 `notepad C:\ai-class\tumble-dashboard\backend\var\state.json`로 엽니다.
+- 직접 하기: AI 도구가 서버를 다시 빌드해 켠 뒤 명령 창에서 `notepad C:\ai-class\tumble-dashboard\backend\var\state.json`로 엽니다.
 - 완료 기준:
   - 맨 위 키가 `sessionId`(`"lesson-"`으로 시작), `records`, `scenarioId`(`"normal"`), `revision`(`1`), `changedAt`이고, 첫 기록이 `"id": "seed-production-0"`입니다. 생산 기록이 모두 나온 뒤 `seed-shipment-0`부터 출고 기록이 이어집니다. 합계 100개·75개는 4-9에서 봅니다.
-  - 서버를 끄고 다시 켠 뒤 `state.json`을 다시 열면 `sessionId`가 그대로입니다. 이미 있는 파일을 다시 쓴 것입니다.
+  - AI 도구에 "내 서버를 다시 켜 주세요."라고 보내 AI 도구가 서버를 끄고 다시 켠 뒤 `state.json`을 다시 열면 `sessionId`가 그대로입니다. 이미 있는 파일을 다시 쓴 것입니다.
   - 시각은 UTC 글자라 한국 시간에서 9시간을 뺀 값입니다. 건수는 켠 시각에 따라 다릅니다.
 
 ## 4-7. 기록 목록 주소
@@ -197,24 +181,22 @@ npm.cmd start
 - 목표: 3회차에 연결 설정을 파일 하나로 나눠 두었으므로 화면 코드를 고치지 않고 이 값만 바꿔 내 서버로 옮깁니다.
 - 완료 기준: `public\config.js`가 여전히 네 줄이고 `apiBaseUrl`만 `"http://127.0.0.1:3000"`으로 바뀌었습니다(끝에 `/` 없음). 1단계로 되돌릴 때는 `API_CONTRACT.md` 9절 표의 1단계 값을 씁니다.
 
-## 4-12. 내 서버 값으로 화면 보기 (직접 하기)
+## 4-12. 내 서버 값으로 화면 보기
 
-1. 4-6에서 서버를 처음 켠 지 28분이 넘었거나 날짜가 바뀌었으면 시드 기록을 지금 시각 기준으로 다시 만듭니다. 서버 창(`backend` 폴더)에서 Ctrl+C로 끄고 아래를 칩니다. `del` 줄 대신 파일 탐색기에서 `backend\var\state.json`을 지우고 `npm.cmd start`만 쳐도 됩니다.
-
-```powershell
-del var\state.json
-npm.cmd start
+```text
+[4-12] 화면에서 내 서버 값을 지금 시각 기준으로 보기 위해, 내 서버를 끄고 상태 파일을 지운 뒤 새 PowerShell 창에서 다시 켜 주세요.
+화면 서버가 꺼져 있으면 함께 켜 주세요.
+자세한 내용은 docs/guide/session-4.md의 "기록을 다시 만들 때"를 참고해 주세요.
 ```
 
-2. 서버 창(`backend`, 3000)과 화면 창(대시보드 폴더, 4173)이 둘 다 켜져 있는지 보고, Chrome에서 `http://127.0.0.1:4173`을 새로고침합니다.
-
-- 하는 일: 화면 창과 서버 창을 둘 다 켜고 Chrome에서 대시보드를 새로고침해 내 서버 값으로 나오는지 봅니다.
+- 하는 일: AI 도구가 상태 파일을 지우고 내 서버를 새 서버 창에서 다시 켜 시드 기록을 지금 시각 기준으로 다시 만듭니다. 나는 Chrome에서 대시보드를 새로고침해 내 서버 값으로 나오는지 봅니다.
 - 목표: 4회차 끝 상태입니다. 3회차까지 만든 화면이 그대로 내 서버의 자료로 동작하는지 확인합니다.
+- 직접 하기: 서버 창(`backend`, 3000)과 화면 창(대시보드 폴더, 4173)이 둘 다 켜져 있는지 보고, Chrome에서 `http://127.0.0.1:4173`을 새로고침합니다.
 - 완료 기준:
-  - 2에서: 1단계와 같은 배치로 "생산 100개 · 목표 120개", "출고 75개 · 목표 100개", 현장 사진 두 장, 시간별 그래프가 보이고 화면 맨 위는 "조회 정상"입니다. 알림 전송 기록 카드는 "전송 성공", "알림 전송이 완료됐습니다."와 마지막 전송 시도 시각을 보여 줍니다.
-  - 2에서: F12, Network 탭에서 `snapshot` 요청이 10초마다 `http://127.0.0.1:3000/api/v1/snapshot`으로 나가고 상태가 200이며, 사진 요청은 `http://127.0.0.1:3000/api/v1/images/factory`, `…/warehouse`입니다. Console 탭에 CORS 오류가 없습니다.
-  - 2에서: 생산 기록 화면과 출고 기록 화면의 줄 수가 `state.json`의 생산·출고 건수와 같고, 화면 맨 위의 기준 시각에서 오늘의 지난 정시를 고르면 Network 탭에 `?at=`이 붙은 요청이 보이고 그때까지의 수량으로 바뀝니다.
-- 막히면: 처음 켠 지 28분이 넘으면 두 현장이 "확인 필요"이고 "기록이 30분 넘게 들어오지 않았습니다." 안내가 보입니다. 위의 1로 상태 파일을 새로 만들면 정상 표시로 돌아옵니다.
+  - 1단계와 같은 배치로 "생산 100개 · 목표 120개", "출고 75개 · 목표 100개", 현장 사진 두 장, 시간별 그래프가 보이고 화면 맨 위는 "조회 정상"입니다. 알림 전송 기록 카드는 "전송 성공", "알림 전송이 완료됐습니다."와 마지막 전송 시도 시각을 보여 줍니다.
+  - F12, Network 탭에서 `snapshot` 요청이 10초마다 `http://127.0.0.1:3000/api/v1/snapshot`으로 나가고 상태가 200이며, 사진 요청은 `http://127.0.0.1:3000/api/v1/images/factory`, `…/warehouse`입니다. Console 탭에 CORS 오류가 없습니다.
+  - 생산 기록 화면과 출고 기록 화면의 줄 수가 `state.json`의 생산·출고 건수와 같고, 화면 맨 위의 기준 시각에서 오늘의 지난 정시를 고르면 Network 탭에 `?at=`이 붙은 요청이 보이고 그때까지의 수량으로 바뀝니다.
+- 막히면: 4-12로 다시 켠 지 28분이 넘으면 두 현장이 "확인 필요"이고 "기록이 30분 넘게 들어오지 않았습니다." 안내가 보입니다. 4-12 프롬프트를 다시 보내 상태 파일을 새로 만들면 정상 표시로 돌아옵니다.
 
 ## 4-13. 내 코드 남겨 두기 (직접 하기)
 
@@ -233,7 +215,7 @@ git commit -m "4회차 내 NestJS 서버"
 ## 4회차 끝 확인
 
 - [ ] `backend` 폴더에서 `npm.cmd ls --depth=0`을 치면 4-3의 일곱 패키지가 같은 버전으로 나옵니다.
-- [ ] 서버 창의 `npm.cmd start`에 `Mapped` 줄이 health, records, snapshot, images 네 개이고 `Nest application successfully started`로 끝납니다.
+- [ ] AI 도구가 연 서버 창에 `Mapped` 줄이 health, records, snapshot, images 네 개이고 `Nest application successfully started`로 끝납니다.
 - [ ] `http://127.0.0.1:3000/api/v1/health`가 `{"status":"ok","releaseId":"local"}`입니다.
 - [ ] `http://127.0.0.1:3000/api/v1/snapshot`에서 생산 `completed` 100, 출고 75, `image.url`이 `http://127.0.0.1:3000/api/v1/images/…`입니다.
 - [ ] `backend\var\state.json`은 서버를 처음 켤 때 생기고, 다시 켜도 `sessionId`가 그대로입니다.

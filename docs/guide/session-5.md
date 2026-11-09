@@ -512,6 +512,7 @@ var TumbleCore = (function () { … return { iso, day, view, parse, recordsAt, s
 - Apps Script API 켜기(5-2), Google 로그인(5-6)
 - 편집기에서 권한 승인과 실습 시트 만들기(5-17)
 - 웹 앱 열기(`gas:open`)와 화면 확인(5-18, 5-19), 커밋(5-20)
-- 화면 서버 켜기와 끄기
+
+화면 서버는 사용자가 켜 달라고 할 때 AI 도구가 1회차 문서 '화면 서버 켜기' 절대로 새 PowerShell 창에서 켭니다. 다 쓴 서버를 끄는 일(서버 창을 닫거나 Ctrl+C)은 사용자가 합니다. 4회차 내 서버는 이번 회차에 켜지 않습니다.
 
 [session-5 문서 끝]
