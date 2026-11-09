@@ -32,7 +32,11 @@
 - Google 웹 앱 주소, 배포 ID, 스크립트 ID, Discord 웹훅 주소는 채팅·코드·문서에 옮겨 적지 마세요. 명령 출력에 나와도 답에는 "배포 ID를 받았습니다"처럼 무엇을 받았는지 이름만 말합니다. 웹 앱 주소는 gas:deploy 명령이 public/config.js에 적는 것만 예외입니다.
 - 터미널 명령은 Windows PowerShell 기준으로 npm.cmd, npx.cmd, curl.exe를 씁니다.
 - npm.cmd run gas:create, gas:push, gas:deploy, gas:redeploy는 프롬프트가 실행하라고 할 때만, 적힌 횟수만큼 실행하세요. 실패해도 다시 실행하지 말고 오류 줄을 알려 주세요(비밀 값이 든 부분은 빼고).
-- 서버 켜기·끄기(npm.cmd start), backend 폴더의 설치·빌드·켜기, npm.cmd run gas:login, gas:editor, gas:open은 사용자가 직접 합니다. 실행하지 말고, 필요하면 칠 명령만 알려 주세요.
+- 서버(화면 서버 4173, 4회차부터 backend 폴더의 내 서버 3000)는 프롬프트나 사용자가 켜 달라고 할 때 켭니다. 내 터미널에서 직접 켜지 말고, 새 PowerShell 창을 열어 그 창에서 켭니다. 명령 꼴은 보충 문서 session-1.md의 "화면 서버 켜기"와 session-4.md의 "내 서버 설치·빌드·켜기"에 있습니다.
+- 켜기 전에 그 포트를 듣는 서버가 이미 있으면 새로 켜지 말고 "이미 켜져 있습니다"라고 알려 주세요.
+- 서버를 다시 켜야 하면 그 포트를 듣는 프로세스만 끄고(포트로 찾은 프로세스만 끄고, 프로세스 이름으로 찾아 끄지 않습니다) 새 창에서 다시 켭니다. 서버가 꺼진 예전 창은 닫아도 된다고 알려 주세요.
+- backend 폴더의 설치(npm.cmd install)와 빌드(npm.cmd run build)는 내 터미널에서 직접 실행합니다. 4회차에 backend 코드를 고친 번호(4-6 ~ 4-10)는 마치기 전에 빌드하고 내 서버를 다시 켭니다.
+- npm.cmd run gas:login, gas:editor, gas:open은 사용자가 직접 합니다. 실행하지 말고, 필요하면 칠 명령만 알려 주세요.
 - 실행해도 되는 git 명령은 1회차 작업 준비의 git init, 회차 첫 프롬프트의 원격 저장소 더하기·받기·파일 가져오기(git checkout class/milestone-N -- (경로) 꼴), 완료 브랜치를 읽는 git fetch class와 git show, 그리고 아무것도 바꾸지 않고 읽기만 하는 git status, git remote -v, git log, git ls-tree입니다. 원격 저장소 class가 이미 있으면(git remote -v로 확인) 다시 더하지 말고 그대로 받기만 합니다. 커밋과 push는 하지 마세요. 커밋은 사용자가 직접 합니다.
 - 브라우저를 열어 확인하지 마세요. 화면 확인, Google 로그인과 권한 승인, Apps Script 편집기 작업은 사용자가 직접 합니다.
 - 요청에 없는 패키지는 더하지 말고 버전을 바꾸지 마세요. npm audit fix도 실행하지 마세요. 화면은 외부 라이브러리·CDN·웹 글꼴 없이 만듭니다.
