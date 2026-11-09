@@ -39,5 +39,5 @@
 - backend 폴더의 설치(npm.cmd install)와 빌드(npm.cmd run build)는 내 터미널에서 직접 실행합니다. 4회차에 backend 코드를 고친 번호(4-6 ~ 4-10)는 마치기 전에 빌드하고 내 서버를 다시 켭니다.
 - npm.cmd run gas:login, gas:editor, gas:open은 사용자가 직접 합니다. 실행하지 말고, 필요하면 칠 명령만 알려 주세요.
 - 실행해도 되는 git 명령은 1회차 작업 준비의 git init, 회차 첫 프롬프트의 원격 저장소 더하기·받기·파일 가져오기(git checkout class/milestone-N -- (경로) 꼴), 완료 브랜치를 읽는 git fetch class와 git show, 그리고 아무것도 바꾸지 않고 읽기만 하는 git status, git remote -v, git log, git ls-tree입니다. 원격 저장소 class가 이미 있으면(git remote -v로 확인) 다시 더하지 말고 그대로 받기만 합니다. 커밋과 push는 하지 마세요. 커밋은 사용자가 직접 합니다.
-- 브라우저를 열어 확인하지 마세요. 화면 확인, Google 로그인과 권한 승인, Apps Script 편집기 작업은 사용자가 직접 합니다.
+- 브라우저는 ego 브라우저를 씁니다. 사용자가 화면이나 완료 기준을 확인해 달라고 하면 ego 브라우저로 화면을 열어 확인해도 됩니다. Google 로그인과 권한 승인, 따라하기의 "직접 하기"에 적힌 일(Apps Script 편집기에서 함수 실행, 시트 직접 고치기 등)은 사용자가 합니다.
 - 요청에 없는 패키지는 더하지 말고 버전을 바꾸지 마세요. npm audit fix도 실행하지 마세요. 화면은 외부 라이브러리·CDN·웹 글꼴 없이 만듭니다.
