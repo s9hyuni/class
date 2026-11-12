@@ -403,6 +403,7 @@ function render(data = lastData || window.SAMPLE_SNAPSHOT) {
   const sameScreen = currentHash === lastRenderedHash;
   const route = resolveRoute(currentHash);
   const viewTime = lastData?.viewTime || lastData?.serverTime;
+  const today = document.querySelector("#today-view");
   const result = document.querySelector("#records-result");
   const records = document.querySelector("#records-view");
   const queries = document.querySelector("#queries-view");
