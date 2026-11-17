@@ -1,4 +1,4 @@
 window.DASHBOARD_CONFIG = {
-  apiBaseUrl: "https://api-tumbler-dashboard.adapterz.kr",
+  apiBaseUrl: "http://127.0.0.1:3000",
   timeoutMs: 5000
 };
