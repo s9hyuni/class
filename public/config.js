@@ -1,4 +1,4 @@
 window.DASHBOARD_CONFIG = {
-  apiBaseUrl: "http://127.0.0.1:3000",
-  timeoutMs: 5000
+  apiBaseUrl: "https://script.google.com/macros/s/AKfycbzc6T2SB5zKsvZ832kLL5zd4D3L0Np4al4hr20LHBuuX-ffRZlaOqUcKs869_oImFrkOg/exec",
+  timeoutMs: 15000
 };

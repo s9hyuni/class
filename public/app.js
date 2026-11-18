@@ -33,6 +33,15 @@ let queryLog = loadQueryLog();
 let pageIsLeaving = false;
 let selectedQueryAt = "";
 
+function apiUrl(baseUrl, path, params = "") {
+  const base = baseUrl.replace(/\/$/, "");
+  const query = String(params);
+  if (base.endsWith("/exec")) {
+    return `${base}?path=${encodeURIComponent(path)}${query ? `&${query}` : ""}`;
+  }
+  return `${base}${path}${query ? `?${query}` : ""}`;
+}
+
 function isQueryLogEntry(entry) {
   return Boolean(
     entry &&
@@ -506,9 +515,8 @@ async function fetchSnapshot(at = selectedAt, generation = viewGeneration) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const base = baseUrl.replace(/\/$/, "");
-    const params = at ? new URLSearchParams({ at }) : null;
-    const endpoint = `${base}/api/v1/snapshot${params ? `?${params}` : ""}`;
+    const params = at ? new URLSearchParams({ at }) : "";
+    const endpoint = apiUrl(baseUrl, "/api/v1/snapshot", params);
     const data = await requestJson(endpoint, controller.signal);
     if (generation !== viewGeneration) return;
     if (at && (!data?.viewTime || Date.parse(data.viewTime) !== Date.parse(at))) {
@@ -529,7 +537,9 @@ async function fetchSnapshot(at = selectedAt, generation = viewGeneration) {
     render(lastData);
     updateQueryStatus(true);
     if (resolveRoute(window.location.hash).page === "records") {
-      loadRecords(lastData.viewTime, recordsViewGeneration);
+      if (!recordsRequest || recordsRequest.at !== lastData.viewTime || recordsRequest.generation !== recordsViewGeneration) {
+        loadRecords(lastData.viewTime, recordsViewGeneration);
+      }
     }
   } catch (error) {
     const response = error?.cause && Number.isInteger(error.cause.status) ? error.cause : null;
@@ -1107,7 +1117,7 @@ async function loadRecords(viewTime, viewGeneration, range = null) {
   const params = new URLSearchParams({ kind, at: viewTime });
   if (range?.from) params.set("from", new Date(`${range.from}+09:00`).toISOString());
   if (range?.to) params.set("to", new Date(`${range.to}+09:00`).toISOString());
-  const endpoint = `${baseUrl.replace(/\/$/, "")}/api/v1/records?${params}`;
+  const endpoint = apiUrl(baseUrl, "/api/v1/records", params);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const request = { kind, at: viewTime, generation: viewGeneration, promise: null };
