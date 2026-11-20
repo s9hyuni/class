@@ -146,3 +146,49 @@ function doGet(e) {
     return json_({ error: error.message });
   }
 }
+
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function sendAlert_(key, message) {
+  var props = properties_();
+  var storageKey = "ALERT_" + meta_().sessionId + "_" + key;
+  var now = Date.now();
+  var last = Number(props.getProperty(storageKey) || 0);
+  if (now - last < settings_().cooldown_minutes * 60000) return;
+  var url = props.getProperty("DISCORD_WEBHOOK_URL");
+  var status = "failed";
+  var detail = "알림 연결 또는 웹훅 설정을 확인해 주세요.";
+  if (url && /^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+$/.test(url)) {
+  var content = message.indexOf("텀블공장: ") === 0 || message.indexOf("물류창고: ") === 0 ? message : "텀블공장: " + message;
+    try {
+      var response = UrlFetchApp.fetch(url + "?wait=true", {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({ content: content, allowed_mentions: { parse: [] } }),
+        muteHttpExceptions: true
+      });
+      var code = response.getResponseCode();
+      status = code >= 200 && code <= 299 ? "sent" : "failed";
+      detail = "HTTP " + code;
+    } catch (error) {
+      status = "failed";
+      detail = "알림 연결 또는 웹훅 설정을 확인해 주세요.";
+    }
+  }
+  spreadsheet_().getSheetByName(TUMBLE_SHEETS.alerts).appendRow(toRow_([new Date(now).toISOString(), key, message, status, detail]));
+  props.setProperty(storageKey, String(now));
+}
+
+function testDiscordAlert() {
+  withLock_(function () {
+    sendAlert_("test-" + Utilities.getUuid(), "알림 연결 테스트입니다.");
+  });
+}
